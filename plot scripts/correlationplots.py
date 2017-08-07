@@ -74,7 +74,7 @@ ax4.text(0.45, -6.3, r'$SNR_C = {:.2f}$'.format((0.01*sum(sign**2))/(0.01*(sum((
 l = ax4.set_ylabel('$C^s(t)$')
 l.set_fontsize('large')
 ax1.set_xticklabels([])
-fig.savefig('signals.png',dpi=300)
+#fig.savefig('signals.png',dpi=300)
 
 l = ax4.set_xlabel('Time (s)')
 show()
