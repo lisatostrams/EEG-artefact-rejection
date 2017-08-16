@@ -15,9 +15,14 @@ import time
 Data = SimData()
 
 import matplotlib.pyplot as plt
-nrlags = 500
+
+
 #%%
 X = np.concatenate((Data.X['id1'],Data.HEOG['id1'], Data.VEOG['id1']))
+nrlags = 100
+ts = len(X.T)
+taus = np.unique([int(x) for x in scipy.stats.truncnorm.rvs((0 - ts) / (ts/3), ((ts*2)-1 - ts) / (ts/3), loc=ts, scale=ts/3, size=nrlags)])
+
 
 #plot_sources(X,X)
 #%%
@@ -41,8 +46,7 @@ def cross_corr(X):
     
 X, U, s, Vt = svd_whiten(X)
 R_tau = cross_corr(X)
-ts = len(X.T)
-taus = [int(x) for x in scipy.stats.truncnorm.rvs((0 - ts) / (ts/3), ((ts*2)-1 - ts) / (ts/3), loc=ts, scale=ts/3, size=nrlags)]
+
 R_tau_ = R_tau[taus] 
 
 #%%
@@ -94,8 +98,6 @@ plot_sources(S, X)
 Xf = np.concatenate((Data.X['id1'],-Data.HEOG['id1'], -Data.VEOG['id1']))
 Xf,_,_,_ = svd_whiten(Xf)
 R_tauf = cross_corr(Xf)
-ts = len(Xf.T)
-taus = [int(x) for x in scipy.stats.truncnorm.rvs((0 - ts) / (ts/3), ((ts*2)-1 - ts) / (ts/3), loc=ts, scale=ts/3, size=nrlags)]
 R_tau_f = R_tauf[taus] 
 start_time=time.time()
 Wf, _,_ = jacobi_angles(R_tau_f)
@@ -121,7 +123,7 @@ def find_flips(S,Sf):
     for source in S:
         flip = False
         for sourcef in Sf:
-            if(np.corrcoef(source,-sourcef)[0][1] > 0.85):
+            if(np.corrcoef(source,-sourcef)[0][1] > 0.99):
                 plot_flips(source,sourcef)
                 flip = True
                 
@@ -135,7 +137,10 @@ Sc = find_flips(S,Sf)
 
 #%%
 Xc = np.dot(W.T,Sc)
-plot_sources(Sc,Xc, save=True, corrected=True)
+Vtc = np.dot(np.linalg.inv(U),Xc)
+S=np.diag(s)
+C = np.dot(np.dot(U, S), Vtc) 
+plot_sources(Sc,C, corrected=True)
 
 #%%
 def plot_correction(X,C):
