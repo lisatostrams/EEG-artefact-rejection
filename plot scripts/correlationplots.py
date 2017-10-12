@@ -74,88 +74,92 @@ from scipy import signal
 #l = ax4.set_ylabel('$C^s(t)$')
 #l.set_fontsize('large')
 #ax1.set_xticklabels([])
-##fig.savefig('signals.png',dpi=300)
-#
+#fig.savefig('signals.png',dpi=300)
+
 #l = ax4.set_xlabel('Time (s)')
 #show()
 #
-#t = arange(0.0, 1.0, 0.01)
-#noise1 = np.random.normal(0, 0.9, 100)
-#noise2 = np.random.normal(0, 0.9, 100)
-#noise3 = np.random.normal(0,0.9,100)
-#sign1 = 2.5*sin(6*pi*t)+noise1
-#sign2 = 2.5*sin(12*pi*t)+noise3
-#artefact = 3.0*signal.square(8.7 * pi * t+0.2*pi)+noise2
-#
-#f, axarr = plt.subplots(3, 4, figsize=(16,4),sharex=True, sharey=True)
-#plt.subplots_adjust(wspace=0.5)
-#axarr[0, 0].plot(t, sign1,'g')
-#
-#axarr[2, 0].plot(t, sign2,'g')
-#
-#axarr[1, 0].plot(t,artefact, 'r')
-#
-#axarr[0, 1].axis('off')
-#axarr[2, 1].axis('off')
-#axarr[0, 3].axis('off')
-#axarr[2, 3].axis('off')
-##axarr[0, 1].set_title('Axis [0,1]')
-#axarr[1, 1].plot(t, 0.9*sign1+0.8*sign2+1.2*artefact)
-#axarr[1, 1].set_title('')
-#
-#axarr[0, 2].plot(t, sign1,'g')
-#
-#axarr[1, 2].plot(t, sign2,'g')
-#
-#axarr[2, 2].plot(t,artefact, 'r')
-#axarr[1, 3].plot(t, sign1+sign2+0.01*artefact)
-#plt.setp([a.get_xticklabels() for a in axarr[0, :]], visible=False)
-#plt.setp([a.get_xticklabels() for a in axarr[1, :]], visible=False)
-#plt.setp([a.get_xticklabels() for a in axarr[2, :]], visible=False)
-#plt.setp([a.get_yticklabels() for a in axarr[:, 1]], visible=False)
-#plt.setp([a.get_yticklabels() for a in axarr[:, 0]], visible=False)
-#plt.setp([a.get_yticklabels() for a in axarr[:, 2]], visible=False)
-#plt.setp([a.get_yticklabels() for a in axarr[:, 3]], visible=False)
-#f.savefig('mixingunmixing.png',dpi=300)
-
-
-
-
-
 t = arange(0.0, 1.0, 0.01)
-noise1 = np.random.normal(0, 2.5, 100)
+noise1 = np.random.normal(0, 1.5, 100)
 noise2 = np.random.normal(0, 0.9, 100)
-noise3 = np.random.normal(0,0.9,100)
-sign1 = 2.5*sin(4*pi*t)+noise1
+noise3 = np.random.normal(0,1.5,100)
+sign1 = 2.5*sin(6*pi*t)+noise1
 sign2 = 2.5*sin(12*pi*t)+noise3
-artefact = 5.0*signal.square(8.7 * pi * t+0.2*pi)+noise2
+artefact = 3.0*signal.square(8.7 * pi * t+0.2*pi)+noise2
 
-f, axarr = plt.subplots(2, 4, figsize=(16,2.6),sharex=True, sharey=True)
-plt.subplots_adjust(wspace=0.5)
+f, axarr = plt.subplots(3, 4, figsize=(12,3),sharex=True, sharey=True)
+plt.subplots_adjust(wspace=1.5)
 axarr[0, 0].plot(t, sign1,'g')
-l = axarr[0, 0].set_ylabel('$B^s(t)$')
-l.set_fontsize('large')
 
-axarr[0, 2].axis('off')
+axarr[2, 0].plot(t, sign2,'g')
 
 axarr[1, 0].plot(t,artefact, 'r')
-l = axarr[1, 0].set_ylabel('$O^s(t)$')
-l.set_fontsize('large')
-axarr[0, 1].axis('off')
-axarr[1,2].axis('off')
 
-axarr[1, 1].plot(t, 0.9*sign1+1.2*artefact)
-l = axarr[1, 1].set_ylabel('$X^s(t)$')
-l.set_fontsize('large')
-axarr[1, 1].set_title('')
+axarr[0, 1].axis('off')
+axarr[2, 1].axis('off')
 axarr[0, 3].axis('off')
-axarr[1, 3].plot(t, sign1+0.01*artefact+2*noise2)
-l = axarr[1, 3].set_ylabel('$C^s(t)$')
-l.set_fontsize('large')
+axarr[2, 3].axis('off')
+#axarr[0, 1].set_title('Axis [0,1]')
+axarr[1, 1].plot(t, 0.9*sign1+0.8*sign2+1.2*artefact)
+axarr[1, 1].set_title('')
+
+axarr[0, 2].plot(t, sign1,'g')
+
+axarr[1, 2].plot(t, sign2,'g')
+
+axarr[2, 2].plot(t,artefact, 'r')
+axarr[1, 3].plot(t, sign1+sign2+0.01*artefact)
 plt.setp([a.get_xticklabels() for a in axarr[0, :]], visible=False)
 plt.setp([a.get_xticklabels() for a in axarr[1, :]], visible=False)
-#plt.setp([a.get_xticklabels() for a in axarr[2, :]], visible=False)
-#plt.setp([a.get_xticklabels() for a in axarr[3, :]], visible=False)
+plt.setp([a.get_xticklabels() for a in axarr[2, :]], visible=False)
 plt.setp([a.get_yticklabels() for a in axarr[:, 1]], visible=False)
 plt.setp([a.get_yticklabels() for a in axarr[:, 0]], visible=False)
-f.savefig('simulateddata.png',dpi=300)
+plt.setp([a.get_yticklabels() for a in axarr[:, 2]], visible=False)
+plt.setp([a.get_yticklabels() for a in axarr[:, 3]], visible=False)
+f.tight_layout()
+plt.subplots_adjust(wspace=0.3)
+f.savefig('mixingunmixing.png',dpi=300)
+
+
+
+
+
+#t = arange(0.0, 1.0, 0.01)
+#noise1 = np.random.normal(0, 2.5, 100)
+#noise2 = np.random.normal(0, 0.9, 100)
+#noise3 = np.random.normal(0,0.9,100)
+#sign1 = 2.5*sin(40*pi*t)+noise1
+#sign2 = 2.5*sin(12*pi*t)+noise3
+#artefact = 5.0*signal.square(8.7 * pi * t+0.2*pi)+noise2
+#
+#f, axarr = plt.subplots(2, 4, figsize=(12,2.6),sharex=True, sharey=True)
+#
+#axarr[0, 0].plot(t, sign1,'g')
+#l = axarr[0, 0].set_ylabel('$B^s(t)$')
+#l.set_fontsize('large')
+#
+#axarr[0, 2].axis('off')
+#
+#axarr[1, 0].plot(t,artefact, 'r')
+#l = axarr[1, 0].set_ylabel('$O^s(t)$')
+#l.set_fontsize('large')
+#axarr[0, 1].axis('off')
+#axarr[1,2].axis('off')
+#
+#axarr[1, 1].plot(t, 0.9*sign1+1.2*artefact)
+#l = axarr[1, 1].set_ylabel('$X^s(t)$')
+#l.set_fontsize('large')
+#axarr[1, 1].set_title('')
+#axarr[0, 3].axis('off')
+#plt.subplots_adjust(wspace=0.3)
+#axarr[1, 3].plot(t, sign1+0.01*artefact+2*noise2)
+#l = axarr[1, 3].set_ylabel('$C^s(t)$')
+#l.set_fontsize('large')
+#plt.setp([a.get_xticklabels() for a in axarr[0, :]], visible=False)
+#plt.setp([a.get_xticklabels() for a in axarr[1, :]], visible=False)
+##plt.setp([a.get_xticklabels() for a in axarr[2, :]], visible=False)
+##plt.setp([a.get_xticklabels() for a in axarr[3, :]], visible=False)
+#plt.setp([a.get_yticklabels() for a in axarr[:, 1]], visible=False)
+#plt.setp([a.get_yticklabels() for a in axarr[:, 0]], visible=False)
+#f.tight_layout()
+#f.savefig('simulateddata.png',dpi=300)
