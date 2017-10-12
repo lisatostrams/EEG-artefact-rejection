@@ -2,11 +2,12 @@
 """
 Created on Tue Aug 22 17:51:34 2017
 
-@author: RjDoll
+@author: RjDoll & Lisa Tostrams
+
 """
 import numpy as np
 from scipy import signal
-from script.joint_diagonalizer import jacobi_angles
+from joint_diagonalizer import jacobi_angles
 import time
 import matplotlib.pyplot as plt
 
@@ -16,8 +17,14 @@ class SOBI(object):
     def __init__(self, X, EOG_chans, taus = np.array([1,2,3,4,5,6,7,8,9,10,12,14,16,18,20,25,30,35,40,45,50,55,60,
                  65,70,75,80,85,90,95,100,120,140,160,180,200,220,240,260,280,
                  300]), corr_thres=.3, eps = 1e-8, sweeps = 500):
+        """
+        Constructor input: X, EOG_channels, optional: taus, corr_thres, eps, sweeps
+        
+        
+        """
         self.X = X
-        self.taus = taus
+        ts = len(X.T)
+        self.taus = taus+ts-2
         self.EOG_chans = EOG_chans
         self.corr_thres = corr_thres
         ## Whiten data using SVD, save the variables required for unwhitening
@@ -26,6 +33,7 @@ class SOBI(object):
         
         ## Calculate cross-correlations: (1) for each time-lag, (2) extract those at taus
         R_tau = self.cross_corr(self.X_white)
+        print(len(R_tau))
         R_tau = R_tau[taus] 
         
         ## Joint-diagonalisation
@@ -43,13 +51,13 @@ class SOBI(object):
         self.Sc = self.find_flips(self.S, self.Sf)
         
 
-        #%% Find components which correlate highly with EOG channels
+        #% Find components which correlate highly with EOG channels
         for i in range(0, len(self.EOG_chans)):
             for j in range(0, len(self.Sc)):
                 coef = np.corrcoef(self.Sc[j,:], self.X[self.EOG_chans[i]])[0,1]
                 if np.abs(coef) > self.corr_thres:
                     self.Sc[j,:] = np.zeros([1,self.Sc.shape[1]])
-        #%% Reconstruct
+        #% Reconstruct
         self.Xc = self.reconstruct(self.Sc, W, U, s)
                 
         
@@ -71,6 +79,10 @@ class SOBI(object):
         f.show()
         
     def reconstruct(self, Sc, W, U, s):
+        '''
+        Reconstruct the data from the new set of sources
+        Unwhiten the data
+        '''
         tmp = np.dot(W, Sc)
         Vtc= np.dot(np.linalg.inv(U),tmp)
         return np.dot(np.dot(U, s), Vtc)
@@ -99,10 +111,15 @@ class SOBI(object):
         return OUT
         
     def joint_diag(self,X, R_tau, eps = 1e-8, sweeps = 500):
-#        start_time = time.time()
+        '''
+        Calculate the joint diagonalizer for all correlation matrices using method with jacobi angles
+        The transpose of the joint diagonalizer is the unmixing matrix
+        Computation time is a function of number of lags
+        '''
+        start_time = time.time()
         W,_,_ = jacobi_angles(R_tau, eps = eps, sweeps = sweeps)
         S = np.dot(W.T,X)
-#        print("--- {:.2f} seconds ---".format(time.time() - start_time))
+        print("--- {:.2f} seconds ---".format(time.time() - start_time))
         return S, W
         
     def find_flips(self,S,Sf):

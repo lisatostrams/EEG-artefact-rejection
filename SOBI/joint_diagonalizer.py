@@ -76,6 +76,7 @@ def jacobi_angles( Ms, **kwargs ):
                 # Compute the eigenvector directly
                 t_on, t_off = G[0,0] - G[1,1], G[0,1] + G[1,0]
                 theta = 0.5 * np.arctan2( t_off, t_on + np.sqrt( t_on*t_on + t_off * t_off) )
+                #complex angles c,s that minimize sum(off(givens_rotate(M,i,j,c,s)*M*givens_rotate(M,i,j,c,s)))
                 c, s = np.cos(theta), np.sin(theta)
 
                 if abs(s) > threshold:
@@ -98,3 +99,17 @@ def jacobi_angles( Ms, **kwargs ):
         err += norm(M - diag(diag(M)))
 
     return R, L, err
+
+"""
+A Fast Algorithm for Joint Diagonalization with Non-orthogonal
+Transformations and its Application to
+Blind Source Separation
+
+"""
+
+def fast_frobenius(C,N=500):
+    
+    
+    
+    
+    
