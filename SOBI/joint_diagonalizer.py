@@ -107,7 +107,10 @@ Blind Source Separation
 
 """
 
-def fast_frobenius(C,N=500):
+def fast_frobenius(C):
+    W = np.zeros_like(C[0])
+    K = len(C)
+    z = np.zeros_like(C[0])
     
     
     
