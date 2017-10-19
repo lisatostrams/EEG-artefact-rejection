@@ -5,8 +5,7 @@ Created on Tue Aug 15 11:17:09 2017
 """
 
 """
-Routines for simultaneous diagonalization
-Arun Chaganty <arunchaganty@gmail.com>
+
 """
 
 import numpy as np
@@ -100,50 +99,69 @@ def jacobi_angles( Ms, **kwargs ):
 
     return R, L, err
 
-"""
-A Fast Algorithm for Joint Diagonalization with Non-orthogonal
-Transformations and its Application to
-Blind Source Separation
+    
 
-"""
 
 def fast_frobenius(Cs, **kwargs):
+    """
+    A Fast Algorithm for Joint Diagonalization with Non-orthogonal
+    Transformations and its Application to
+    Blind Source Separation
+    
+    Input Cs Matrices to be diagonalized
+    """
     K, m, n = Cs.shape
     assert m == n
-    W = np.zeros([m,m])
-    _, V = np.linalg.eigh(Cs[0])
-    #V = eye(m)
+    W = np.zeros([m,m])  
+    _, V = np.linalg.eigh(Cs[0])  #first guess for diagonalizer
+
     z = np.zeros([m,m])
     y = np.zeros([m,m])
     I = eye(m)
     
-    Ds = np.zeros([K,m])  
-    Es = np.zeros_like(Cs)    
+    Ds = np.zeros([K,m])   #diagonal terms of Cs
+    Es = np.zeros_like(Cs)  #offdiagonal terms of Cs
+    
     sweeps = kwargs.get('sweeps', 500)
-    theta = kwargs.get('theta', 1)
+    theta = kwargs.get('theta', 0.5)
+    
     errs = np.zeros(sweeps+1)
+    
     for C in Cs:
+        #calculate average initial error
         C = np.dot(np.dot(V,C),V.T)
         errs[0]+= np.linalg.norm(C - np.diag(C))/K
+
     for s in range(sweeps):
+        
         for k in range(K):
+            #set Ds and Es
             Ds[k] = np.diag(Cs[k])
             Es[k] = Cs[k]
             np.fill_diagonal(Es[k],0)
+        
+        #compute W from Cs according to equation 17 in article
         for i in range(m):
             for j in range(m):
                 z[i,j] = sum(Ds[:,i]*Ds[:,j])
                 y[i,j] = sum(Ds[:,j]*Es[:,i,j])
+                
         for i in range(m):
             for j in range(m):
                 W[i,j] = z[i,j]*y[j,i] - z[i,i]*y[i,j]
+
+        #make sure W satisfies frobenius norm < theta
         if(np.linalg.norm(W,'fro') > theta):
             W = W*(theta/np.linalg.norm(W,'fro'))
+            
+        #update V
         V = np.dot((I + W),V)
         
+        #calculate new average error
         for C in Cs:
             C = np.dot(np.dot(V,C),V.T)
             errs[s+1]+= np.linalg.norm(C - np.diag(C))/K
+
         if(errs[s+1] > errs[s]):
             break
         
