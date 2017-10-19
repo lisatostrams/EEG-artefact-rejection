@@ -104,11 +104,14 @@ def jacobi_angles( Ms, **kwargs ):
 
 def fast_frobenius(Cs, **kwargs):
     """
+    Ziehe (2004):
     A Fast Algorithm for Joint Diagonalization with Non-orthogonal
     Transformations and its Application to
     Blind Source Separation
     
-    Input Cs Matrices to be diagonalized
+    Input   Cs  Matrices to be diagonalized
+    Output  V diagonalizer that minimizes off diagonal terms of Cs
+            errs average error
     """
     K, m, n = Cs.shape
     assert m == n
