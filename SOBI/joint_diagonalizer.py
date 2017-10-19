@@ -60,7 +60,7 @@ def jacobi_angles( Ms, **kwargs ):
     assert m == n
 
     sweeps = kwargs.get('sweeps', 500)
-    threshold = kwargs.get('eps', 1e-8)
+    threshold = kwargs.get('eps', 1e-3)
     rank = kwargs.get('rank', m)
 
     R = eye(m)
@@ -107,10 +107,54 @@ Blind Source Separation
 
 """
 
-def fast_frobenius(C):
-    W = np.zeros_like(C[0])
-    K = len(C)
-    z = np.zeros_like(C[0])
+def fast_frobenius(Cs, **kwargs):
+    K, m, n = Cs.shape
+    assert m == n
+    W = np.zeros([m,m])
+    _, V = np.linalg.eigh(Cs[0])
+    #V = eye(m)
+    z = np.zeros([m,m])
+    y = np.zeros([m,m])
+    I = eye(m)
+    
+    Ds = np.zeros([K,m])  
+    Es = np.zeros_like(Cs)    
+    sweeps = kwargs.get('sweeps', 500)
+    theta = kwargs.get('theta', 1)
+    errs = np.zeros(sweeps+1)
+    for C in Cs:
+        C = np.dot(np.dot(V,C),V.T)
+        errs[0]+= np.linalg.norm(C - np.diag(C))/K
+    for s in range(sweeps):
+        for k in range(K):
+            Ds[k] = np.diag(Cs[k])
+            Es[k] = Cs[k]
+            np.fill_diagonal(Es[k],0)
+        for i in range(m):
+            for j in range(m):
+                z[i,j] = sum(Ds[:,i]*Ds[:,j])
+                y[i,j] = sum(Ds[:,j]*Es[:,i,j])
+        for i in range(m):
+            for j in range(m):
+                W[i,j] = z[i,j]*y[j,i] - z[i,i]*y[i,j]
+        if(np.linalg.norm(W,'fro') > theta):
+            W = W*(theta/np.linalg.norm(W,'fro'))
+        V = np.dot((I + W),V)
+        
+        for C in Cs:
+            C = np.dot(np.dot(V,C),V.T)
+            errs[s+1]+= np.linalg.norm(C - np.diag(C))/K
+        if(errs[s+1] > errs[s]):
+            break
+        
+    return V, errs[s+1]
+
+
+        
+
+
+        
+    
     
     
     

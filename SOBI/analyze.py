@@ -5,29 +5,30 @@ Created on Thu Oct 12 10:14:17 2017
 @author: Lisa Tostrams
 """
 import sim_data
-Data = SimData()
-id=7
+Data = sim_data.SimData()
+id=2
 Data.plot_subject(id)
 #%%
 import SOBI
-epses = [0.1,0.01, 1e-3,1e-4,1e-5,1e-6,1e-7,1e-8]
-runtimes = np.zeros([8,1])
-NMSEsum = np.zeros([8,1])
-i=0
-for e in epses:
-    start_time=time.time()
-    Sobi = SOBI.SOBI(np.concatenate((Data.X['id{}'.format(id)],Data.HEOG['id{}'.format(id)], Data.VEOG['id{}'.format(id)])), 
-                 np.array([len(Data.electrodes), len(Data.electrodes)+1]),
-                 eps=e)
-    runtimes[i] = time.time() - start_time
-    NMSEsum[i] = sum(NMSE(Sobi.Xc))
-    i=i+1
+#Sobi = SOBI.SOBI(np.concatenate((Data.X['id{}'.format(id)],Data.HEOG['id{}'.format(id)], Data.VEOG['id{}'.format(id)])),np.array([len(Data.electrodes), len(Data.electrodes)+1]), eps = 1e-3)
+#epses = [0.1,0.01, 1e-3,1e-4,1e-5,1e-6,1e-7,1e-8]
+#runtimes = np.zeros([8,1])
+#NMSEsum = np.zeros([8,1])
+#i=0
+#for e in epses:
+#    start_time=time.time()
+#    Sobi = SOBI.SOBI(np.concatenate((Data.X['id{}'.format(id)],Data.HEOG['id{}'.format(id)], Data.VEOG['id{}'.format(id)])), 
+#                 np.array([len(Data.electrodes), len(Data.electrodes)+1]),
+#                 eps=e)
+#    runtimes[i] = time.time() - start_time
+#    NMSEsum[i] = sum(NMSE(Sobi.Xc))
+#    i=i+1
 #%%
 plt.plot(epses,runtimes,'-o',label='Runtimes')
-plt.plot(epses,NMSEsum,'-o',label='Summed NMSE')
-
-plt.semilogx(basex=e)
+plt.plot(epses, NMSEsum,'-o',label='Summed NMSE')
+#plt.semilogx(basex=e)
 plt.semilogy()
+plt.semilogx()
 #plt.ylim([0,12])
 plt.legend()
 plt.show()
@@ -106,8 +107,8 @@ def show_OA(B,X,OA):
 B = Data.B['id{}'.format(id)]
 X = Data.X['id{}'.format(id)]
 C = Sobi.Xc[0:19,:]
-OA = annotate(B,X)
-show_OA(B,X,OA)
+OA = annotate(C,X)
+show_OA(C,X,OA)
 
 #%%
     

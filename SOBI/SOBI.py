@@ -7,7 +7,7 @@ Created on Tue Aug 22 17:51:34 2017
 """
 import numpy as np
 from scipy import signal
-from joint_diagonalizer import jacobi_angles
+from joint_diagonalizer import jacobi_angles, fast_frobenius
 import time
 import matplotlib.pyplot as plt
 
@@ -16,7 +16,7 @@ class SOBI(object):
 
     def __init__(self, X, EOG_chans, taus = np.array([1,2,3,4,5,6,7,8,9,10,12,14,16,18,20,25,30,35,40,45,50,55,60,
                  65,70,75,80,85,90,95,100,120,140,160,180,200,220,240,260,280,
-                 300]), corr_thres=.3, eps = 1e-8, sweeps = 500):
+                 300]), corr_thres=.3, eps = 1e-3, sweeps = 500):
         """
         Constructor input: X, EOG_channels, optional: taus, corr_thres, eps, sweeps
         
@@ -32,12 +32,12 @@ class SOBI(object):
         s=np.diag(s)
         
         ## Calculate cross-correlations: (1) for each time-lag, (2) extract those at taus
-        R_tau = self.cross_corr(self.X_white)
-        print(len(R_tau))
-        R_tau = R_tau[taus] 
+        self.R_tau = self.cross_corr(self.X_white)
+        print(len(self.R_tau))
+        self.R_tau = self.R_tau[taus] 
         
         ## Joint-diagonalisation
-        self.S, W = self.joint_diag(self.X_white, R_tau, eps, sweeps)
+        self.S, W = self.joint_diag(self.X_white, self.R_tau, eps, sweeps)
         
         ## Flip EOG channels. For now: assume last two sensors contain EOG
         self.X_flipped = np.copy(self.X_white)
@@ -110,7 +110,7 @@ class SOBI(object):
 
         return OUT
         
-    def joint_diag(self,X, R_tau, eps = 1e-8, sweeps = 500):
+    def joint_diag(self,X, R_tau, eps = 1e-3, sweeps = 500):
         '''
         Calculate the joint diagonalizer for all correlation matrices using method with jacobi angles
         The transpose of the joint diagonalizer is the unmixing matrix
@@ -118,6 +118,7 @@ class SOBI(object):
         '''
         start_time = time.time()
         W,_,_ = jacobi_angles(R_tau, eps = eps, sweeps = sweeps)
+        #W,_ = fast_frobenius(R_tau)
         S = np.dot(W.T,X)
         print("--- {:.2f} seconds ---".format(time.time() - start_time))
         return S, W
