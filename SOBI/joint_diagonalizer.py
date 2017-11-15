@@ -194,8 +194,8 @@ def ACDC(Ms, **kwargs):
     #A = np.eye(m)
     Ds = np.zeros_like(Ms)
     ws = np.ones(J)
-    for j in range(J):
-        Ds[j] = np.diag(np.diag(M[j])))
+    ws[0] = 10
+
 
     
     for sweep in range(sweeps):
@@ -218,20 +218,30 @@ def ACDC(Ms, **kwargs):
                     if(i!=k):
                         sumi += Ds[j][i][i]*np.dot(A.T[i],A.T[i].T)
                 Pk += ws[j]*Ds[j][k][k]*(Ms[j] - sumi)
-                sumj += ws[j]*Ds[j][k][k]**2
+                sumj += ws[j]*(Ds[j][k][k]**2)
             s, V = np.linalg.eig(Pk)
             if(s[0]>0):
                 A_hat.T[k] = (np.sqrt(s[0])/np.sqrt(sumj))*V[:,0]
         A = A_hat    
         err = 0
-        for M in Ms:
-            Mt = np.dot(np.dot(A,np.diag(np.diag(M))),A.T)
-            err+= (np.linalg.norm(M - Mt)**2)/J
+        for j in range(J):
+            Mt = np.dot(np.dot(A,Ds[j]),A.T)
+            err+= (np.linalg.norm(Ms[j] - Mt)**2)/J
         print(err)
 
 
     
+def LSB(Ms, **kwargs):
+    """
+    Yeredor (2002):
+    Non-Orthogonal Joint Diagonalization in the
+    Least-Squares Sense With Application in Blind
+    Source Separation
     
+    Input   Ms  Matrices to be diagonalized
+    Output  V diagonalizer that minimizes off diagonal terms of Cs
+            errs average error
+    """
     
     
     
