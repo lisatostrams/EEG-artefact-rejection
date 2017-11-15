@@ -116,7 +116,7 @@ def fast_frobenius(Cs, **kwargs):
     K, m, n = Cs.shape
     assert m == n
     W = np.zeros([m,m])  
-    _, V = np.linalg.eigh(Cs[0])  #first guess for diagonalizer
+    _, V = np.linalg.eig(Cs[0])  #first guess for diagonalizer
 
     z = np.zeros([m,m])
     y = np.zeros([m,m])
@@ -170,11 +170,66 @@ def fast_frobenius(Cs, **kwargs):
         
     return V, errs[s+1]
 
+def ACDC(Ms, **kwargs):
+    """
+    Yeredor (2002):
+    Non-Orthogonal Joint Diagonalization in the
+    Least-Squares Sense With Application in Blind
+    Source Separation
+    
+    Input   Ms  Matrices to be diagonalized
+    Output  V diagonalizer that minimizes off diagonal terms of Cs
+            errs average error
+    """
+    sweeps = kwargs.get('sweeps', 1000)
+    J, m, n = Ms.shape
+    assert m == n
+    e, A = np.linalg.eig(Ms[0])  #first guess for diagonalizer
+    A = A.T
+    err = 0
+    for M in Ms:
+        Mt = np.dot(np.dot(A,np.diag(np.diag(M))),A.T)
+        err+= (np.linalg.norm(M - Mt)**2)/J
+    print(err)
+    #A = np.eye(m)
+    Ds = np.zeros_like(Ms)
+    ws = np.ones(J)
+    for j in range(J):
+        Ds[j] = np.diag(np.diag(M[j])))
 
-        
+    
+    for sweep in range(sweeps):
+        for j in range(J):
+            diag_ATMjA = np.diag(np.dot(np.dot(A.T,Ms[j]),A))
+            ATA = np.dot(A.T,A)
+            ATAxATA = np.multiply(ATA,ATA)
+            if(np.linalg.det(ATAxATA) == 0):
+                Ds[j] = np.diag( np.dot(np.linalg.pinv(ATAxATA),diag_ATMjA) )
+            else:
+                Ds[j] = np.diag( np.dot(np.linalg.inv(ATAxATA),diag_ATMjA) )
+            
+        A_hat = np.zeros_like(A)
+        for k in range(m):
+            Pk = np.zeros_like(A)
+            sumj = 0
+            for j in range(J):
+                sumi = 0
+                for i in range(m):
+                    if(i!=k):
+                        sumi += Ds[j][i][i]*np.dot(A.T[i],A.T[i].T)
+                Pk += ws[j]*Ds[j][k][k]*(Ms[j] - sumi)
+                sumj += ws[j]*Ds[j][k][k]**2
+            s, V = np.linalg.eig(Pk)
+            if(s[0]>0):
+                A_hat.T[k] = (np.sqrt(s[0])/np.sqrt(sumj))*V[:,0]
+        A = A_hat    
+        err = 0
+        for M in Ms:
+            Mt = np.dot(np.dot(A,np.diag(np.diag(M))),A.T)
+            err+= (np.linalg.norm(M - Mt)**2)/J
+        print(err)
 
 
-        
     
     
     

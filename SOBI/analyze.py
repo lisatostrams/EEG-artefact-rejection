@@ -6,11 +6,11 @@ Created on Thu Oct 12 10:14:17 2017
 """
 import sim_data
 Data = sim_data.SimData()
-id=2
+id=5
 Data.plot_subject(id)
 #%%
 import SOBI
-#Sobi = SOBI.SOBI(np.concatenate((Data.X['id{}'.format(id)],Data.HEOG['id{}'.format(id)], Data.VEOG['id{}'.format(id)])),np.array([len(Data.electrodes), len(Data.electrodes)+1]), eps = 1e-3)
+Sobi = SOBI.SOBI(np.concatenate((Data.X['id{}'.format(id)],Data.HEOG['id{}'.format(id)], Data.VEOG['id{}'.format(id)])),np.array([len(Data.electrodes), len(Data.electrodes)+1]), eps = 1e-3)
 #epses = [0.1,0.01, 1e-3,1e-4,1e-5,1e-6,1e-7,1e-8]
 #runtimes = np.zeros([8,1])
 #NMSEsum = np.zeros([8,1])

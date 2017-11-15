@@ -112,13 +112,13 @@ class SOBI(object):
         
     def joint_diag(self,X, R_tau, diag, eps = 1e-3, sweeps = 500):
         '''
-        Calculate the joint diagonalizer for all correlation matrices using method with jacobi angles
+        Calculate the joint diagonalizer for all correlation matrices
         The transpose of the joint diagonalizer is the unmixing matrix
         Computation time is a function of number of lags
         '''
         start_time = time.time()
         if(diag == 'Fro'):
-            W,_ = fast_frobenius(R_tau)         
+            W,_ = fast_frobenius(R_tau, eps = eps)         
         else:
             W,_,_ = jacobi_angles(R_tau, eps = eps, sweeps = sweeps)
    
