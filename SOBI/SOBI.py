@@ -16,7 +16,7 @@ class SOBI(object):
 
     def __init__(self, X, EOG_chans, taus = np.array([1,2,3,4,5,6,7,8,9,10,12,14,16,18,20,25,30,35,40,45,50,55,60,
                  65,70,75,80,85,90,95,100,120,140,160,180,200,220,240,260,280,
-                 300]), corr_thres=.3, eps = 1e-3, sweeps = 500):
+                 300]), corr_thres=.3, eps = 1e-3, sweeps = 500, diag='Jac'):
         """
         Constructor input: X, EOG_channels, optional: taus, corr_thres, eps, sweeps
         
@@ -37,7 +37,7 @@ class SOBI(object):
         self.R_tau = self.R_tau[taus] 
         
         ## Joint-diagonalisation
-        self.S, W = self.joint_diag(self.X_white, self.R_tau, eps, sweeps)
+        self.S, W = self.joint_diag(self.X_white, self.R_tau, diag, eps, sweeps)
         
         ## Flip EOG channels. For now: assume last two sensors contain EOG
         self.X_flipped = np.copy(self.X_white)
@@ -62,7 +62,7 @@ class SOBI(object):
                 
         
     
-    def plot_correction(self,X,C,labels,beg,Ts):
+    def plot_correction(self,X,Xc,labels,beg,Ts):
         N = X.shape[1]
         f, axarr = plt.subplots(len(X), 2, figsize=(8,20),sharex=True, sharey=True)
         plt.subplots_adjust(wspace=0.05, hspace = 0.3)
@@ -72,7 +72,7 @@ class SOBI(object):
         for i in range(0,len(X)):
             axarr[i,0].plot(t,X[i])
             axarr[i,0].set_ylabel(labels[i])
-            axarr[i,1].plot(t,C[i])
+            axarr[i,1].plot(t,Xc[i])
         axarr[i,0].set_xlabel('Time [s]')
         axarr[i,1].set_xlabel('Time [s]')
         f.tight_layout()
@@ -110,15 +110,18 @@ class SOBI(object):
 
         return OUT
         
-    def joint_diag(self,X, R_tau, eps = 1e-3, sweeps = 500):
+    def joint_diag(self,X, R_tau, diag, eps = 1e-3, sweeps = 500):
         '''
         Calculate the joint diagonalizer for all correlation matrices using method with jacobi angles
         The transpose of the joint diagonalizer is the unmixing matrix
         Computation time is a function of number of lags
         '''
         start_time = time.time()
-        W,_,_ = jacobi_angles(R_tau, eps = eps, sweeps = sweeps)
-        #W,_ = fast_frobenius(R_tau)
+        if(diag == 'Fro'):
+            W,_ = fast_frobenius(R_tau)         
+        else:
+            W,_,_ = jacobi_angles(R_tau, eps = eps, sweeps = sweeps)
+   
         S = np.dot(W.T,X)
         print("--- {:.2f} seconds ---".format(time.time() - start_time))
         return S, W

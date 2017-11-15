@@ -125,7 +125,7 @@ def fast_frobenius(Cs, **kwargs):
     Ds = np.zeros([K,m])   #diagonal terms of Cs
     Es = np.zeros_like(Cs)  #offdiagonal terms of Cs
     
-    sweeps = kwargs.get('sweeps', 500)
+    sweeps = kwargs.get('sweeps', 1000)
     theta = kwargs.get('theta', 0.5)
     
     errs = np.zeros(sweeps+1)
