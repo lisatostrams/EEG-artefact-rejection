@@ -5,6 +5,7 @@ Created on Thu Oct 12 10:14:17 2017
 @author: Lisa Tostrams
 """
 import sim_data
+import numpy as np
 Data = sim_data.SimData()
 id=5
 Data.plot_subject(id)
@@ -33,6 +34,7 @@ plt.semilogx()
 plt.legend()
 plt.show()
 #%%
+import matplotlib.pyplot as plt
 labels = Data.electrodes + ['HEOG','VEOG']
 plot_correction(Sobi.X,Sobi.Xc)
 #%%

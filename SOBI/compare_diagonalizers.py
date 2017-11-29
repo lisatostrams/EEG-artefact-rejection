@@ -123,4 +123,66 @@ for id in range(1,55):
 plt.plot(runtimes_J,runtimes_F,'.')
 #%%
 plt.plot(NMSEsum_J,NMSEsum_F,'.')
-    
+
+#%%
+import numpy as np
+testData = np.zeros((5,5,10))
+i=0
+for line in open('testdata.dat', 'r'):
+    item = line.rstrip().split(',')
+    nms = np.asarray([float(x) for x in item])
+    nms = nms.reshape([10,5]).T
+    testData[:,i,:] = nms
+    i+=1
+
+Ms = np.asarray([testData[:,:,i] for i in range(10)])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

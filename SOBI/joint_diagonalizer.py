@@ -182,65 +182,66 @@ def ACDC(Ms, **kwargs):
             errs average error
     """
     sweeps = kwargs.get('sweeps', 1000)
-    J, m, n = Ms.shape
-    assert m == n
-    e, A = np.linalg.eig(Ms[0])  #first guess for diagonalizer
-    A = A.T
-    err = 0
-    for M in Ms:
-        Mt = np.dot(np.dot(A,np.diag(np.diag(M))),A.T)
-        err+= (np.linalg.norm(M - Mt)**2)/J
-    print(err)
-    #A = np.eye(m)
-    Ds = np.zeros_like(Ms)
-    ws = np.ones(J)
-    ws[0] = 10
+    K, N, n = Ms.shape
+    assert N == n
 
+    A = np.eye(N) #diagonalizing matrix
+    Lam = np.zeros([N,K]) #diagonal values of the K diagonal matrices
+    skipAC = True
+    ws = np.ones(K)
+    
+    Cls = np.zeros(sweeps)
 
     
+    
     for sweep in range(sweeps):
-        for j in range(J):
-            diag_ATMjA = np.diag(np.dot(np.dot(A.T,Ms[j]),A))
-            ATA = np.dot(A.T,A)
-            ATAxATA = np.multiply(ATA,ATA)
-            if(np.linalg.det(ATAxATA) == 0):
-                Ds[j] = np.diag( np.dot(np.linalg.pinv(ATAxATA),diag_ATMjA) )
-            else:
-                Ds[j] = np.diag( np.dot(np.linalg.inv(ATAxATA),diag_ATMjA) )
-            
-        A_hat = np.zeros_like(A)
-        for k in range(m):
-            Pk = np.zeros_like(A)
-            sumj = 0
-            for j in range(J):
-                sumi = 0
-                for i in range(m):
-                    if(i!=k):
-                        sumi += Ds[j][i][i]*np.dot(A.T[i],A.T[i].T)
-                Pk += ws[j]*Ds[j][k][k]*(Ms[j] - sumi)
-                sumj += ws[j]*(Ds[j][k][k]**2)
-            s, V = np.linalg.eig(Pk)
-            if(s[0]>0):
-                A_hat.T[k] = (np.sqrt(s[0])/np.sqrt(sumj))*V[:,0]
-        A = A_hat    
-        err = 0
-        for j in range(J):
-            Mt = np.dot(np.dot(A,Ds[j]),A.T)
-            err+= (np.linalg.norm(Ms[j] - Mt)**2)/J
-        print(err)
+        if not skipAC:
+            """AC phase"""
+
+            for l in range(N):
+                P = np.zeros(N)
+                for k in range(K):
+                    D = Ms[k]
+                    for nc in range(N):
+                        if(nc!=l):
+                            a = A[:,nc]
+                            D = D-np.outer(np.dot(Lam[nc,k],a),a.T)
+                    P = P + ws[k]*np.dot(Lam[l,k],D)
+                # TODO
+                #improve computation biggest eigenvalue
+                s, V = np.linalg.eigh(P)
+                s = np.real(s)
+                smax = max(s)
+                sidx = np.where(s==smax)[0][0]
+                if(smax>0):
+                    al = V[:,sidx]
+                    fnz = np.where(al!=0)
+                    al = al*np.sign(al[fnz[0][0]])
+                    lam = Lam[l,:]
+                    f=np.sqrt(smax)/np.sqrt(np.dot((np.multiply(lam,lam)),ws))
+                    a = al*f
+                else:
+                    a = np.zeros(N)
+                A[:,l] = a
+        skipAC = False        
+        
+        """DC phase"""
+        ATA = np.dot(A.T,A)
+        ATAxATA = np.multiply(ATA,ATA)
+        G = np.linalg.inv(ATAxATA)
+        for k in range(K):
+            diag_ATMA = np.diag(np.dot(np.dot(A.T,Ms[k]),A))
+            Lam[:,k] = np.dot(G,diag_ATMA)
+            L = np.diag(Lam[:,k])
+            D=Ms[k]-np.dot(np.dot(A,L),A.T)
+            Cls[sweep] += ws[k]*np.sum(np.sum(np.multiply(D,D)))
+        #print(Cls[sweep])
 
 
     
 def LSB(Ms, **kwargs):
     """
-    Yeredor (2002):
-    Non-Orthogonal Joint Diagonalization in the
-    Least-Squares Sense With Application in Blind
-    Source Separation
-    
-    Input   Ms  Matrices to be diagonalized
-    Output  V diagonalizer that minimizes off diagonal terms of Cs
-            errs average error
+ 
     """
     
     
