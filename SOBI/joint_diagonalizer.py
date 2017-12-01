@@ -170,6 +170,34 @@ def fast_frobenius(Cs, **kwargs):
         
     return V, errs[s+1]
 
+
+def power_iteration(A, num_simulations):
+    # Ideally choose a random vector
+    # To decrease the chance that our vector
+    # Is orthogonal to the eigenvector
+    #b_k = np.random.rand(A.shape[0])
+    b_k = np.ones(A.shape[0])
+    for _ in range(num_simulations):
+        # calculate the matrix-by-vector product Ab
+        b_k1 = np.dot(A, b_k)
+
+        # calculate the norm
+        b_k1_norm = np.linalg.norm(b_k1)
+
+        # re normalize the vector
+        b_k = b_k1 / b_k1_norm
+
+    return b_k
+    
+def rayleigh_quotient(A,b):
+    return (np.dot(np.dot(b.T,A),b) / np.dot(b.T,b))
+    
+
+def outer_e(v1,v2):
+    return np.einsum('i,k->ik',v1,v2)
+    
+
+    
 def ACDC(Ms, **kwargs):
     """
     Yeredor (2002):
@@ -181,11 +209,23 @@ def ACDC(Ms, **kwargs):
     Output  V diagonalizer that minimizes off diagonal terms of Cs
             errs average error
     """
-    sweeps = kwargs.get('sweeps', 1000)
+    import time
+    start_time = time.time()
+    sweeps = kwargs.get('sweeps', 50)
+    threshold = kwargs.get('eps', 0.008)
+    init_A = kwargs.get('init_a', True)
     K, N, n = Ms.shape
     assert N == n
 
-    A = np.eye(N) #diagonalizing matrix
+    if(init_A):
+        _, V0 = np.linalg.eigh(Ms[0])
+        A = V0
+    else:
+        A = np.eye(N)
+        
+    #A = np.eye(N) #diagonalizing matrix
+
+    
     Lam = np.zeros([N,K]) #diagonal values of the K diagonal matrices
     skipAC = True
     ws = np.ones(K)
@@ -193,28 +233,54 @@ def ACDC(Ms, **kwargs):
     Cls = np.zeros(sweeps)
 
     
-    
+    d = 0
+    tp = 0
+    ta = 0
+    total = time.time()
     for sweep in range(sweeps):
+
         if not skipAC:
             """AC phase"""
-
+            
+            B = np.zeros([N,N,N,K])
+            for k in range(K):
+                for nc in range(N):
+                    a = A[:,nc]
+                    B[:,:,nc,k] = np.dot(Lam[nc,k],outer_e(a,a))
+ 
             for l in range(N):
+                start_time = time.time()
                 P = np.zeros(N)
                 for k in range(K):
                     D = Ms[k]
+                    D_time = time.time()
                     for nc in range(N):
                         if(nc!=l):
-                            a = A[:,nc]
-                            D = D-np.outer(np.dot(Lam[nc,k],a),a.T)
+                            if(nc==l-1):
+                                a = A[:,nc]
+                                B[:,:,nc,k] = np.dot(Lam[nc,k],outer_e(a,a))
+                            D = D-B[:,:,nc,k]
+                    d += time.time() - D_time
                     P = P + ws[k]*np.dot(Lam[l,k],D)
-                # TODO
+
+                tp += time.time() - start_time
+                #print("P - {:.4f} seconds ---".format(time.time() - start_time))
                 #improve computation biggest eigenvalue
-                s, V = np.linalg.eigh(P)
-                s = np.real(s)
-                smax = max(s)
-                sidx = np.where(s==smax)[0][0]
+                start_time = time.time()
+                pV = power_iteration(P,10)
+                sm = rayleigh_quotient(P,pV)
+                if(sm>0):
+                    smax = sm
+                else:
+                    s, V = np.linalg.eigh(P)
+                    s = np.real(s)
+                    smax = max(s)
+                    sidx = np.where(s==smax)[0][0]
+                    pV = V[:,sidx]
+
                 if(smax>0):
-                    al = V[:,sidx]
+
+                    al = pV
                     fnz = np.where(al!=0)
                     al = al*np.sign(al[fnz[0][0]])
                     lam = Lam[l,:]
@@ -222,7 +288,12 @@ def ACDC(Ms, **kwargs):
                     a = al*f
                 else:
                     a = np.zeros(N)
+                #print("a - {:.4f} seconds ---".format(time.time() - start_time))
+                ta += time.time() - start_time
                 A[:,l] = a
+            print("D - {:.4f} seconds ---".format(d))
+            print("P - {:.4f} seconds ---".format(tp))
+            print("a - {:.4f} seconds ---".format(ta))
         skipAC = False        
         
         """DC phase"""
@@ -234,8 +305,12 @@ def ACDC(Ms, **kwargs):
             Lam[:,k] = np.dot(G,diag_ATMA)
             L = np.diag(Lam[:,k])
             D=Ms[k]-np.dot(np.dot(A,L),A.T)
-            Cls[sweep] += ws[k]*np.sum(np.sum(np.multiply(D,D)))
-        #print(Cls[sweep])
+            Cls[sweep] += np.sum(np.sum(np.multiply(D,D)))
+        print(Cls[sweep])
+        if(Cls[sweep] <= threshold):
+            break
+
+    print("--- {:.2f} seconds ---".format(time.time() - total))
 
 
     
