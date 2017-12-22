@@ -71,7 +71,7 @@ def jacobi_angles( Ms, **kwargs ):
                 G = zeros((2,2))
                 for M in Ms:
                     g = np.array([ M[i,i] - M[j,j], M[i,j] + M[j,i] ])
-                    G += np.outer(g,g) / len(Ms)
+                    G += outer_e(g,g) / len(Ms)
                 # Compute the eigenvector directly
                 t_on, t_off = G[0,0] - G[1,1], G[0,1] + G[1,0]
                 theta = 0.5 * np.arctan2( t_off, t_on + np.sqrt( t_on*t_on + t_off * t_off) )
@@ -113,10 +113,12 @@ def fast_frobenius(Cs, **kwargs):
     Output  V diagonalizer that minimizes off diagonal terms of Cs
             errs average error
     """
-    K, m, n = Cs.shape
-    assert m == n
+    sweeps = kwargs.get('sweeps', 100)
+    theta = kwargs.get('theta', 0.5)
+    K, m, N = Cs.shape
+    assert m == N
     W = np.zeros([m,m])  
-    _, V = np.linalg.eig(Cs[0])  #first guess for diagonalizer
+    _, V = np.linalg.eigh(Cs[0])  #first guess for diagonalizer
 
     z = np.zeros([m,m])
     y = np.zeros([m,m])
@@ -125,15 +127,14 @@ def fast_frobenius(Cs, **kwargs):
     Ds = np.zeros([K,m])   #diagonal terms of Cs
     Es = np.zeros_like(Cs)  #offdiagonal terms of Cs
     
-    sweeps = kwargs.get('sweeps', 1000)
-    theta = kwargs.get('theta', 0.5)
+
     
     errs = np.zeros(sweeps+1)
     
     for C in Cs:
         #calculate average initial error
         C = np.dot(np.dot(V,C),V.T)
-        errs[0]+= np.linalg.norm(C - np.diag(C))/K
+        errs[0]+= np.linalg.norm(C - np.diag(np.diag(C)))/K
 
     for s in range(sweeps):
         
@@ -142,16 +143,26 @@ def fast_frobenius(Cs, **kwargs):
             Ds[k] = np.diag(Cs[k])
             Es[k] = Cs[k]
             np.fill_diagonal(Es[k],0)
-        
+        z = np.zeros([m,m])
+        y = np.zeros([m,m])
+            
         #compute W from Cs according to equation 17 in article
         for i in range(m):
             for j in range(m):
-                z[i,j] = sum(Ds[:,i]*Ds[:,j])
-                y[i,j] = sum(Ds[:,j]*Es[:,i,j])
+                for k in range(K):
+
+                    z[i][j] += Ds[k,i]*Ds[k,j];
+                    y[i][j] += 0.5*Ds[k,j]*(Es[k,i,j]+Es[k,j,i]);
+                    
+                #    z[i,j] = sum(Ds[:,i]*Ds[:,j])
+                 #   y[i,j] = sum(Ds[:,j]*Es[:,i,j])
                 
-        for i in range(m):
-            for j in range(m):
-                W[i,j] = z[i,j]*y[j,i] - z[i,i]*y[i,j]
+        for i in range(m-1):
+            for j in range(i+1,m):
+
+                W[i,j] = (z[j][i]*y[j][i] - z[i][i]*y[i][j])/(z[j][j]*z[i][i]-z[i][j]*z[i][j]);
+                W[j,i] = (z[i][j]*y[i][j] - z[j][j]*y[j][i])/(z[j][j]*z[i][i]-z[i][j]*z[i][j]);
+
 
         #make sure W satisfies frobenius norm < theta
         if(np.linalg.norm(W,'fro') > theta):
@@ -161,14 +172,14 @@ def fast_frobenius(Cs, **kwargs):
         V = np.dot((I + W),V)
         
         #calculate new average error
-        for C in Cs:
-            C = np.dot(np.dot(V,C),V.T)
-            errs[s+1]+= np.linalg.norm(C - np.diag(C))/K
+        for k in range(K):
+            Cs[k] = np.dot(np.dot(V,Cs[k]),V.T)
+            errs[s+1]+= np.linalg.norm(Cs[k] - np.diag(np.diag(Cs[k])))/K
 
         if(errs[s+1] > errs[s]):
             break
         
-    return V, errs[s+1]
+    return V, errs[:s+2]
 
 
 def power_iteration(A, num_simulations):
@@ -209,34 +220,23 @@ def ACDC(Ms, **kwargs):
     Output  V diagonalizer that minimizes off diagonal terms of Cs
             errs average error
     """
-    import time
-    start_time = time.time()
-    sweeps = kwargs.get('sweeps', 50)
-    threshold = kwargs.get('eps', 0.008)
+
+    sweeps = kwargs.get('sweeps', 500)
+    threshold = kwargs.get('eps', 1e-3)
     init_A = kwargs.get('init_a', True)
     K, N, n = Ms.shape
     assert N == n
-
     if(init_A):
         _, V0 = np.linalg.eigh(Ms[0])
-        A = V0
+        A = V0.T
     else:
         A = np.eye(N)
-        
-    #A = np.eye(N) #diagonalizing matrix
-
     
     Lam = np.zeros([N,K]) #diagonal values of the K diagonal matrices
     skipAC = True
     ws = np.ones(K)
-    
     Cls = np.zeros(sweeps)
 
-    
-    d = 0
-    tp = 0
-    ta = 0
-    total = time.time()
     for sweep in range(sweeps):
 
         if not skipAC:
@@ -249,28 +249,25 @@ def ACDC(Ms, **kwargs):
                     B[:,:,nc,k] = np.dot(Lam[nc,k],outer_e(a,a))
  
             for l in range(N):
-                start_time = time.time()
+
                 P = np.zeros(N)
                 for k in range(K):
                     D = Ms[k]
-                    D_time = time.time()
+
                     for nc in range(N):
                         if(nc!=l):
                             if(nc==l-1):
                                 a = A[:,nc]
                                 B[:,:,nc,k] = np.dot(Lam[nc,k],outer_e(a,a))
                             D = D-B[:,:,nc,k]
-                    d += time.time() - D_time
+
                     P = P + ws[k]*np.dot(Lam[l,k],D)
 
-                tp += time.time() - start_time
-                #print("P - {:.4f} seconds ---".format(time.time() - start_time))
                 #improve computation biggest eigenvalue
-                start_time = time.time()
                 pV = power_iteration(P,10)
                 sm = rayleigh_quotient(P,pV)
                 if(sm>0):
-                    smax = sm
+                    smax = sm #power iteration doesnt always converge
                 else:
                     s, V = np.linalg.eigh(P)
                     s = np.real(s)
@@ -288,12 +285,8 @@ def ACDC(Ms, **kwargs):
                     a = al*f
                 else:
                     a = np.zeros(N)
-                #print("a - {:.4f} seconds ---".format(time.time() - start_time))
-                ta += time.time() - start_time
+
                 A[:,l] = a
-            print("D - {:.4f} seconds ---".format(d))
-            print("P - {:.4f} seconds ---".format(tp))
-            print("a - {:.4f} seconds ---".format(ta))
         skipAC = False        
         
         """DC phase"""
@@ -306,19 +299,54 @@ def ACDC(Ms, **kwargs):
             L = np.diag(Lam[:,k])
             D=Ms[k]-np.dot(np.dot(A,L),A.T)
             Cls[sweep] += np.sum(np.sum(np.multiply(D,D)))
-        print(Cls[sweep])
         if(Cls[sweep] <= threshold):
             break
-
-    print("--- {:.2f} seconds ---".format(time.time() - total))
+    print(Cls[sweep])
+    return np.linalg.inv(A)
+    
 
 
     
 def LSB(Ms, **kwargs):
     """
- 
+    Degerine (2007):
+        A comparative study of Joint Diagonalization Algorithms
     """
+    sweeps = kwargs.get('sweeps', 1000)
+    threshold = kwargs.get('eps', 1e-3)
+    init_B = kwargs.get('init_b', True)
+    K, N, n = Ms.shape
+    assert N == n
+    s, V0 = np.linalg.eigh(Ms[0])
+    B = np.eye(N) 
+    B_hat = np.eye(N)
     
+    ws = np.ones(K)
+    Cls = np.zeros(sweeps)
+    W = np.linalg.inv(np.dot(np.dot(V0,np.diag(s**(0.5))),V0.T)) 
+        
+    for sweep in range(sweeps):
+        #minimization wrt B
+        
+        for l in range(N):
+            Ql = np.zeros([N,N])
+            BlTBl = np.dot(B_hat.T,B_hat) - outer_e(B_hat[l,:],B_hat[l,:])
+            for j in range(K):
+                Ql += ws[j]*np.dot(np.dot(Ms[j],BlTBl),Ms[j]) 
+            s,V = np.linalg.eig(Ql)
+            smin = min(s)
+            sidx = np.where(s==smin)[0][0]
+            bl = V[:,sidx]
+            B_hat[l,:] = bl.T
+        B = np.dot(B_hat,W)
+        B_hat = np.dot(B,np.linalg.inv(W))
+
+    return B
+        
+            
+        
+        
+        
     
-    
+        
     

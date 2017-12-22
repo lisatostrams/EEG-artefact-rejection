@@ -7,14 +7,14 @@ Created on Tue Aug 22 17:51:34 2017
 """
 import numpy as np
 from scipy import signal
-from joint_diagonalizer import jacobi_angles, fast_frobenius
+from joint_diagonalizer import jacobi_angles, fast_frobenius,ACDC,LSB
 import time
 import matplotlib.pyplot as plt
 
 
 class SOBI(object):
 
-    def __init__(self, X, EOG_chans, taus = np.array([1,2,3,4,5,6,7,8,9,10,12,14,16,18,20,25,30,35,40,45,50,55,60,
+    def __init__(self, X, EOG_chans, taus = np.array([0,1,2,3,4,5,6,7,8,9,10,12,14,16,18,20,25,30,35,40,45,50,55,60,
                  65,70,75,80,85,90,95,100,120,140,160,180,200,220,240,260,280,
                  300]), corr_thres=.3, eps = 1e-3, sweeps = 500, diag='Jac'):
         """
@@ -24,7 +24,7 @@ class SOBI(object):
         """
         self.X = X
         ts = len(X.T)
-        self.taus = taus+ts-2
+        self.taus = taus+ts-1
         self.EOG_chans = EOG_chans
         self.corr_thres = corr_thres
         ## Whiten data using SVD, save the variables required for unwhitening
@@ -34,10 +34,10 @@ class SOBI(object):
         ## Calculate cross-correlations: (1) for each time-lag, (2) extract those at taus
         self.R_tau = self.cross_corr(self.X_white)
         print(len(self.R_tau))
-        self.R_tau = self.R_tau[taus] 
+        self.R_tau = self.R_tau[self.taus] 
         
         ## Joint-diagonalisation
-        self.S, W = self.joint_diag(self.X_white, self.R_tau, diag, eps, sweeps)
+        self.S, self.W = self.joint_diag(self.X_white, self.R_tau, diag, eps, sweeps)
         
         ## Flip EOG channels. For now: assume last two sensors contain EOG
         self.X_flipped = np.copy(self.X_white)
@@ -58,7 +58,7 @@ class SOBI(object):
                 if np.abs(coef) > self.corr_thres:
                     self.Sc[j,:] = np.zeros([1,self.Sc.shape[1]])
         #% Reconstruct
-        self.Xc = self.reconstruct(self.Sc, W, U, s)
+        self.Xc = self.reconstruct(self.Sc, self.W, U, s)
                 
         
     
@@ -105,9 +105,9 @@ class SOBI(object):
         ts = len(X.T)
         OUT = np.zeros([(2*ts)-1,n_signals,n_signals])
         for first in range(n_signals):
-            for second in range(n_signals):
-                OUT[:,second,first]= signal.fftconvolve(X[first], X[second], mode='full')  
-
+            for second in range(first+1):
+                OUT[:,second,first]= signal.fftconvolve(X[first], X[second][::-1], mode='full')  
+                OUT[:,first,second] = OUT[:,second,first]
         return OUT
         
     def joint_diag(self,X, R_tau, diag, eps = 1e-3, sweeps = 500):
@@ -117,8 +117,13 @@ class SOBI(object):
         Computation time is a function of number of lags
         '''
         start_time = time.time()
-        if(diag == 'Fro'):
-            W,_ = fast_frobenius(R_tau, eps = eps)         
+        if(diag == 'ACDC'):
+            W,_,_,_ = self.svd_whiten(ACDC(R_tau, eps=eps, sweeps=sweeps))            
+        elif(diag == 'Fro'):
+            W,_ = fast_frobenius(R_tau, eps = eps)   
+            W,_,_,_ = self.svd_whiten(W)
+        elif(diag == 'LSB'):
+           W,_,_,_ = self.svd_whiten(LSB(R_tau))
         else:
             W,_,_ = jacobi_angles(R_tau, eps = eps, sweeps = sweeps)
    
