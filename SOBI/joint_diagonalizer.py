@@ -149,13 +149,10 @@ def fast_frobenius(Cs, **kwargs):
         #compute W from Cs according to equation 17 in article
         for i in range(m):
             for j in range(m):
-                for k in range(K):
-
+                for k in range(K): 
                     z[i][j] += Ds[k,i]*Ds[k,j];
                     y[i][j] += 0.5*Ds[k,j]*(Es[k,i,j]+Es[k,j,i]);
-                    
-                #    z[i,j] = sum(Ds[:,i]*Ds[:,j])
-                 #   y[i,j] = sum(Ds[:,j]*Es[:,i,j])
+
                 
         for i in range(m-1):
             for j in range(i+1,m):
@@ -165,21 +162,24 @@ def fast_frobenius(Cs, **kwargs):
 
 
         #make sure W satisfies frobenius norm < theta
-        if(np.linalg.norm(W,'fro') > theta):
+        while(np.linalg.norm(W,'fro') > theta):
             W = W*(theta/np.linalg.norm(W,'fro'))
             
         #update V
-        V = np.dot((I + W),V)
-        
+        Vn = np.dot((I + W),V)
+
         #calculate new average error
         for k in range(K):
-            Cs[k] = np.dot(np.dot(V,Cs[k]),V.T)
+            Cs[k] = np.dot(np.dot(Vn,Cs[k]),Vn.T)
             errs[s+1]+= np.linalg.norm(Cs[k] - np.diag(np.diag(Cs[k])))/K
 
         if(errs[s+1] > errs[s]):
             break
+
+        else:
+            V = Vn
         
-    return V, errs[:s+2]
+    return V,errs[:s+2]
 
 
 def power_iteration(A, num_simulations):
@@ -235,7 +235,18 @@ def ACDC(Ms, **kwargs):
     Lam = np.zeros([N,K]) #diagonal values of the K diagonal matrices
     skipAC = True
     ws = np.ones(K)
-    Cls = np.zeros(sweeps)
+    Cls = np.zeros(sweeps+1)
+    
+    ATA = np.dot(A.T,A)
+    ATAxATA = np.multiply(ATA,ATA)
+    G = np.linalg.inv(ATAxATA)
+    for k in range(K):
+        diag_ATMA = np.diag(np.dot(np.dot(A.T,Ms[k]),A))
+        Lam[:,k] = np.dot(G,diag_ATMA)
+        L = np.diag(Lam[:,k])
+        D=Ms[k]-np.dot(np.dot(A,L),A.T)
+        Cls[0] += np.sum(np.sum(np.multiply(D,D)))
+    
 
     for sweep in range(sweeps):
 
@@ -298,10 +309,12 @@ def ACDC(Ms, **kwargs):
             Lam[:,k] = np.dot(G,diag_ATMA)
             L = np.diag(Lam[:,k])
             D=Ms[k]-np.dot(np.dot(A,L),A.T)
-            Cls[sweep] += np.sum(np.sum(np.multiply(D,D)))
-        if(Cls[sweep] <= threshold):
+            Cls[sweep+1] += np.sum(np.sum(np.multiply(D,D)))
+        if(Cls[sweep+1] <= threshold):
             break
-    print(Cls[sweep])
+        if(Cls[sweep+1] > Cls[sweep]):
+            break
+
     return np.linalg.inv(A)
     
 
@@ -324,7 +337,7 @@ def LSB(Ms, **kwargs):
     ws = np.ones(K)
     Cls = np.zeros(sweeps)
     W = np.linalg.inv(np.dot(np.dot(V0,np.diag(s**(0.5))),V0.T)) 
-        
+    errs = np.zeros(sweeps+1)
     for sweep in range(sweeps):
         #minimization wrt B
         
@@ -340,6 +353,14 @@ def LSB(Ms, **kwargs):
             B_hat[l,:] = bl.T
         B = np.dot(B_hat,W)
         B_hat = np.dot(B,np.linalg.inv(W))
+        
+        for k in range(K):
+            Ms[k] = np.dot(np.dot(B,Ms[k]),B.T)
+            errs[sweep]+= np.linalg.norm(Ms[k] - np.diag(np.diag(Ms[k])))/K
+
+        if(errs[sweep] < threshold):
+            break
+            
 
     return B
         

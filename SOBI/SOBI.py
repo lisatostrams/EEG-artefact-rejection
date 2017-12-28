@@ -8,6 +8,7 @@ Created on Tue Aug 22 17:51:34 2017
 import numpy as np
 from scipy import signal
 from joint_diagonalizer import jacobi_angles, fast_frobenius,ACDC,LSB
+import gc
 import time
 import matplotlib.pyplot as plt
 
@@ -18,13 +19,13 @@ class SOBI(object):
                  65,70,75,80,85,90,95,100,120,140,160,180,200,220,240,260,280,
                  300]), corr_thres=.3, eps = 1e-3, sweeps = 500, diag='Jac'):
         """
-        Constructor input: X, EOG_channels, optional: taus, corr_thres, eps, sweeps
+        Constructor input: X, EOG_channels, optional: taus, corr_thres, eps, sweeps, diag={Jac,Fro,ACDC,LSB}
         
         
         """
+        gc.enable()
         self.X = X
-        ts = len(X.T)
-        self.taus = taus+ts-1
+        self.taus = taus
         self.EOG_chans = EOG_chans
         self.corr_thres = corr_thres
         ## Whiten data using SVD, save the variables required for unwhitening
@@ -34,8 +35,9 @@ class SOBI(object):
         ## Calculate cross-correlations: (1) for each time-lag, (2) extract those at taus
         self.R_tau = self.cross_corr(self.X_white)
         print(len(self.R_tau))
+ 
         self.R_tau = self.R_tau[self.taus] 
-        
+        gc.collect()       
         ## Joint-diagonalisation
         self.S, self.W = self.joint_diag(self.X_white, self.R_tau, diag, eps, sweeps)
         
@@ -103,10 +105,11 @@ class SOBI(object):
         '''
         n_signals = len(X)
         ts = len(X.T)
-        OUT = np.zeros([(2*ts)-1,n_signals,n_signals])
+        OUT = np.zeros([ts,n_signals,n_signals])
+        print(ts)
         for first in range(n_signals):
             for second in range(first+1):
-                OUT[:,second,first]= signal.fftconvolve(X[first], X[second][::-1], mode='full')  
+                OUT[:,second,first]= signal.fftconvolve(X[first], X[second][::-1], mode='full')[ts-1:]
                 OUT[:,first,second] = OUT[:,second,first]
         return OUT
         
@@ -128,7 +131,7 @@ class SOBI(object):
             W,_,_ = jacobi_angles(R_tau, eps = eps, sweeps = sweeps)
    
         S = np.dot(W.T,X)
-        print("--- {:.2f} seconds ---".format(time.time() - start_time))
+        print("--- {:.2f} seconds diagonalizing ---".format(time.time() - start_time))
         return S, W
         
     def find_flips(self,S,Sf):

@@ -78,6 +78,23 @@ def NMSE(C):
     
 #%%
 import matplotlib.transforms as mtransforms
+def svd_whiten(self, X):
+    U, s, Vt = np.linalg.svd(X, full_matrices=False)
+    X_white = np.dot(U, Vt)
+    return X_white, U, s, Vt
+
+
+def cross_corr(X):
+    n_signals = len(X)
+    ts = len(X.T)
+    OUT = np.zeros([(2*ts)-1,n_signals,n_signals])
+    for first in range(n_signals):
+        for second in range(first+1):
+            OUT[:,second,first]= signal.fftconvolve(X[first], X[second][::-1], mode='full')  
+            OUT[:,first,second] = OUT[:,second,first]
+    return OUT
+
+
 def annotate(B,X):
     diff = abs(X-B)
     OA = diff > 5

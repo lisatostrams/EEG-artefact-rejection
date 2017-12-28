@@ -97,9 +97,15 @@ def plot_correction(X,C,id, save=False,diag='Jac'):
 
 runtimes_J = np.zeros([54,1])
 runtimes_F = np.zeros([54,1])
+runtimes_A = np.zeros([54,1])
+runtimes_B = np.zeros([54,1])
+
 
 NMSEsum_J = np.zeros([54,1])
 NMSEsum_F = np.zeros([54,1])
+NMSEsum_A = np.zeros([54,1])
+NMSEsum_B = np.zeros([54,1])
+
 
 for id in range(1,55):
     print(id)
@@ -119,23 +125,35 @@ for id in range(1,55):
     runtimes_F[id-1] = time.time() - start_time
     NMSEsum_F[id-1] = sum(NMSE(Sobi.Xc,id))
   #  plot_correction(Sobi.X, Sobi.Xc, id, save=True, diag='Fro')
+    start_time=time.time()
+    Sobi = SOBI.SOBI(np.concatenate((Data.X['id{}'.format(id)],Data.HEOG['id{}'.format(id)], Data.VEOG['id{}'.format(id)])), 
+                     np.array([len(Data.electrodes), len(Data.electrodes)+1]),
+                     eps=1e-2, diag = 'ACDC')
+    runtimes_A[id-1] = time.time() - start_time
+    NMSEsum_A[id-1] = sum(NMSE(Sobi.Xc,id))
+    start_time=time.time()
+    Sobi = SOBI.SOBI(np.concatenate((Data.X['id{}'.format(id)],Data.HEOG['id{}'.format(id)], Data.VEOG['id{}'.format(id)])), 
+                     np.array([len(Data.electrodes), len(Data.electrodes)+1]),
+                     eps=1e-2, diag = 'LSB')
+    runtimes_B[id-1] = time.time() - start_time
+    NMSEsum_B[id-1] = sum(NMSE(Sobi.Xc,id))
 #%%
 plt.plot(runtimes_J,runtimes_F,'.')
 #%%
 plt.plot(NMSEsum_J,NMSEsum_F,'.')
 
 #%%
-import numpy as np
-testData = np.zeros((5,5,10))
-i=0
-for line in open('testdata.dat', 'r'):
-    item = line.rstrip().split(',')
-    nms = np.asarray([float(x) for x in item])
-    nms = nms.reshape([10,5]).T
-    testData[:,i,:] = nms
-    i+=1
-
-Ms = np.asarray([testData[:,:,i] for i in range(10)])
+#import numpy as np
+#testData = np.zeros((5,5,10))
+#i=0
+#for line in open('testdata.dat', 'r'):
+#    item = line.rstrip().split(',')
+#    nms = np.asarray([float(x) for x in item])
+#    nms = nms.reshape([10,5]).T
+#    testData[:,i,:] = nms
+#    i+=1
+#
+#Ms = np.asarray([testData[:,:,i] for i in range(10)])
 
 
 
