@@ -11,6 +11,7 @@ from joint_diagonalizer import jacobi_angles, fast_frobenius,ACDC,LSB
 import gc
 import time
 import matplotlib.pyplot as plt
+from ctypes import CDLL, POINTER, c_int, c_float
 
 
 class SOBI(object):
@@ -33,10 +34,13 @@ class SOBI(object):
         s=np.diag(s)
         
         ## Calculate cross-correlations: (1) for each time-lag, (2) extract those at taus
-        self.R_tau = self.cross_corr(self.X_white)
-        print(len(self.R_tau))
- 
-        self.R_tau = self.R_tau[self.taus] 
+        start = time.time()
+        #self.R_tau_fft = self.cross_corrfft(self.X_white)
+        print("--- {:.2f} seconds xcorr fft ---".format(time.time() - start))
+        start = time.time()
+        self.R_tau = self.cross_corr(self.X_white,self.taus)
+        print("--- {:.2f} seconds xcorr direct ---".format(time.time() - start))
+        #self.R_tau_fft = self.R_tau_fft[self.taus] 
         gc.collect()       
         ## Joint-diagonalisation
         self.S, self.W = self.joint_diag(self.X_white, self.R_tau, diag, eps, sweeps)
@@ -44,8 +48,8 @@ class SOBI(object):
         ## Flip EOG channels. For now: assume last two sensors contain EOG
         self.X_flipped = np.copy(self.X_white)
         self.X_flipped[self.EOG_chans,:] = -self.X_flipped[self.EOG_chans,:]
-        R_tauf = self.cross_corr(self.X_flipped)
-        R_tauf = R_tauf[taus] 
+        R_tauf = self.cross_corr(self.X_flipped,self.taus)
+      #  R_tauf = R_tauf[taus] 
         # Joint-diagonalisation
         self.Sf, Wf = self.joint_diag(self.X_flipped, R_tauf, eps, sweeps)
 
@@ -97,9 +101,33 @@ class SOBI(object):
         U, s, Vt = np.linalg.svd(X, full_matrices=False)
         X_white = np.dot(U, Vt)
         return X_white, U, s, Vt
+    
+    def shift(self,x,lag):
+        '''
+        shift signal x by lag 
+        '''
+        xlagged = np.roll(x,lag)
+        xlagged[:lag] = 0
+        return xlagged
+    
+    def cross_corr(self, X,taus):
+        n_signals = len(X)
+        OUT = np.zeros([len(taus)+1,n_signals,n_signals])
+        Xtau = np.zeros_like(X)
+        m = 0
+        for tau in taus:
+            for first in range(n_signals):
+                Xtau[first] = self.shift(X[first],tau)
+            for second in range(n_signals):
+                OUT[m,second,:] =  np.einsum('i,ij->j', Xtau[second], X.T)
+            m=m+1
+                
+        return OUT
+               
+      
+            
 
-
-    def cross_corr(self, X):
+    def cross_corrfft(self, X):
         '''
         Cross correlation function: calculates the convolution (correlation in whitened data) matrix for all lags from -len(signal) to +len(signal)
         '''
