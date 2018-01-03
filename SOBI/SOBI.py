@@ -52,7 +52,6 @@ class SOBI(object):
         # Find flips
         self.Sc = self.find_flips(self.S, self.Sf)
         
-
         #% Find components which correlate highly with EOG channels
         for i in range(0, len(self.EOG_chans)):
             for j in range(0, len(self.Sc)):
