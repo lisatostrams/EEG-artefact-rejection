@@ -34,12 +34,9 @@ class SOBI(object):
         s=np.diag(s)
         
         ## Calculate cross-correlations: (1) for each time-lag, (2) extract those at taus
-        start = time.time()
-        #self.R_tau_fft = self.cross_corrfft(self.X_white)
-        print("--- {:.2f} seconds xcorr fft ---".format(time.time() - start))
-        start = time.time()
+       
         self.R_tau = self.cross_corr(self.X_white,self.taus)
-        print("--- {:.2f} seconds xcorr direct ---".format(time.time() - start))
+  
         #self.R_tau_fft = self.R_tau_fft[self.taus] 
         gc.collect()       
         ## Joint-diagonalisation
@@ -64,6 +61,7 @@ class SOBI(object):
                     self.Sc[j,:] = np.zeros([1,self.Sc.shape[1]])
         #% Reconstruct
         self.Xc = self.reconstruct(self.Sc, self.W, U, s)
+    
                 
         
     
@@ -110,6 +108,10 @@ class SOBI(object):
         return xlagged
     
     def cross_corr(self, X,taus):
+        '''
+        cross correlation function: for each tau, and for each channel, the signal is shifted by tau,
+        dot multiplied with the complete original signal, and summed along the axis corresponding to the channels 
+        '''
         n_signals = len(X)
         OUT = np.zeros([len(taus)+1,n_signals,n_signals])
         Xtau = np.zeros_like(X)
@@ -146,7 +148,6 @@ class SOBI(object):
         The transpose of the joint diagonalizer is the unmixing matrix
         Computation time is a function of number of lags
         '''
-        start_time = time.time()
         if(diag == 'ACDC'):
             W,_,_,_ = self.svd_whiten(ACDC(R_tau, eps=eps, sweeps=sweeps))            
         elif(diag == 'Fro'):
@@ -158,7 +159,6 @@ class SOBI(object):
             W,_,_ = jacobi_angles(R_tau, eps = eps, sweeps = sweeps)
    
         S = np.dot(W.T,X)
-        print("--- {:.2f} seconds diagonalizing ---".format(time.time() - start_time))
         return S, W
         
     def find_flips(self,S,Sf):

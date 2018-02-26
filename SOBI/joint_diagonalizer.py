@@ -54,7 +54,7 @@ def jacobi_angles( Ms, **kwargs ):
     """
 
     assert len(Ms) > 0
-    print(Ms[0].shape)
+
     m, n = Ms[0].shape
     assert m == n
 
