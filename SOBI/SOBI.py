@@ -18,7 +18,7 @@ class SOBI(object):
 
     def __init__(self, X, EOG_chans, taus = np.array([0,1,2,3,4,5,6,7,8,9,10,12,14,16,18,20,25,30,35,40,45,50,55,60,
                  65,70,75,80,85,90,95,100,120,140,160,180,200,220,240,260,280,
-                 300]), corr_thres=.3, eps = 1e-3, sweeps = 500, diag='Jac'):
+                 300]), corr_thres=.3, eps = 1e-3, sweeps = 500, diag='Jac', inversion=True):
         """
         Constructor input: X, EOG_channels, optional: taus, corr_thres, eps, sweeps, diag={Jac,Fro,ACDC,LSB}
         
@@ -42,17 +42,19 @@ class SOBI(object):
         ## Joint-diagonalisation
         self.S, self.W = self.joint_diag(self.X_white, self.R_tau, diag, eps, sweeps)
         
-        ## Flip EOG channels. For now: assume last two sensors contain EOG
-        self.X_flipped = np.copy(self.X_white)
-        self.X_flipped[self.EOG_chans,:] = -self.X_flipped[self.EOG_chans,:]
-        R_tauf = self.cross_corr(self.X_flipped,self.taus)
-      #  R_tauf = R_tauf[taus] 
-        # Joint-diagonalisation
-        self.Sf, Wf = self.joint_diag(self.X_flipped, R_tauf, eps, sweeps)
-
-        # Find flips
-        self.Sc = self.find_flips(self.S, self.Sf)
+        if(inversion):
+            ## Flip EOG channels. For now: assume last two sensors contain EOG
+            self.X_flipped = np.copy(self.X_white)
+            self.X_flipped[self.EOG_chans,:] = -self.X_flipped[self.EOG_chans,:]
+            R_tauf = self.cross_corr(self.X_flipped,self.taus)
+          #  R_tauf = R_tauf[taus] 
+            # Joint-diagonalisation
+            self.Sf, Wf = self.joint_diag(self.X_flipped, R_tauf, eps, sweeps)
         
+            # Find flips
+            self.Sc = self.find_flips(self.S, self.Sf)
+        else: 
+            self.Sc = self.S
         #% Find components which correlate highly with EOG channels
         for i in range(0, len(self.EOG_chans)):
             for j in range(0, len(self.Sc)):

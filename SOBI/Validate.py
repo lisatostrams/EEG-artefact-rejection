@@ -22,6 +22,8 @@ class Validate(object):
         assert (not (B is None and peeg is None)), "Either true sigal B (for simulated data) or PEEG_Analyse instance (for acquired data) needs to be initialized." 
         mask = np.ones(len(X),dtype=bool)
         mask[EOG_chans] = False
+        if(not (peeg is None)): #exclude trigger channel
+            mask[-1] = False
 
         self.O = X[EOG_chans]
         self.X = X[mask,:]
