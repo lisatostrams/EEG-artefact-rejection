@@ -51,7 +51,7 @@ timetable = np.zeros((10,4,4,4))
 betatable = np.zeros((10,4,4,4,2))
 tau_sets = ['t_sdt','t1','t2','t3']
 #%%
-for f in range(len(files)):
+for f in range(10,len(files)):
     peeg = pa.PEEG_Analyse2(file + files[f])
     X = peeg.readSignals()
     print('Subject {}'.format(f+1))
@@ -77,7 +77,7 @@ for f in range(len(files)):
 
 #%%
 
-for f in range(0,10):
+for f in range(2,10):
     peeg = pa.PEEG_Analyse2(file + files[f])
     X = peeg.readSignals()
     print('Subject {}'.format(f+1))
