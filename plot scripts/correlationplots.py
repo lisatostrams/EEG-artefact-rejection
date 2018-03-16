@@ -118,11 +118,23 @@ plt.setp([a.get_yticklabels() for a in axarr[:, 2]], visible=False)
 plt.setp([a.get_yticklabels() for a in axarr[:, 3]], visible=False)
 f.tight_layout()
 plt.subplots_adjust(wspace=0.3)
-f.savefig('mixingunmixing.png',dpi=300)
+#f.savefig('mixingunmixing.png',dpi=300)
 
+import sklearn.decomposition as dec
+pca = dec.PCA()
+data = np.array([sign1,sign2,artefact])
+comp = pca.fit(data)
+comp.components_
+components = comp.components_
+plt.plot(components[0])
+plt.plot(components[1])
+plt.plot(components[2])
 
-
-
+ica = dec.FastICA()
+compi = ica.fit_transform(data)
+plt.plot(components[0])
+plt.plot(components[1])
+plt.plot(components[2])
 
 #t = arange(0.0, 1.0, 0.01)
 #noise1 = np.random.normal(0, 2.5, 100)

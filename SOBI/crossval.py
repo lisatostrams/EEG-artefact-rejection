@@ -18,7 +18,8 @@ import numpy as np
 import pandas as pd
 from pandas import rolling_corr
 import time
-
+import sim_data
+Data = sim_data.SimData()
 import csv
 #%% init
 diag=['Jac','Fro','ACDC','LSB']
@@ -38,41 +39,39 @@ T13 = np.arange(0,50)
 taus = [taus_std,taus_1,taus_2,taus_3]#taus_4]#,T1,T11,T13]
 
 epses = [0.1,0.01,0.001,0.0001]
-file='C:/Users/Lisa/Desktop/SOBI_TestData/'
-files = ['S0002O01M01_pEEG_CHDR1633_13OCT2017_125357.EDF','S0001O01M01_pEEG_CHDR1633_13OCT2017_092441.EDF',
-         'S0003O01M01_pEEG_CHDR1633_20OCT2017_132056.EDF','S0004O01M01_pEEG_CHDR1633_20OCT2017_095710.EDF',
-         'S0005O01M01_pEEG_CHDR1633_20OCT2017_125153.EDF','S0006O01M01_pEEG_CHDR1633_27OCT2017_095158.EDF',
-         'S0007O01M01_pEEG_CHDR1633_27OCT2017_124122.EDF','S0007O01M01_pEEG_CHDR1633_27OCT2017_131003.EDF',
-         'S0009O01M01_pEEG_CHDR1633_03NOV2017_121917.EDF','S0008O01M01_pEEG_CHDR1633_03NOV2017_093642.EDF']
-
+#file='C:/Users/Lisa/Desktop/SOBI_TestData/'
+#files = ['S0002O01M01_pEEG_CHDR1633_13OCT2017_125357.EDF','S0001O01M01_pEEG_CHDR1633_13OCT2017_092441.EDF',
+#         'S0003O01M01_pEEG_CHDR1633_20OCT2017_132056.EDF','S0004O01M01_pEEG_CHDR1633_20OCT2017_095710.EDF',
+#         'S0005O01M01_pEEG_CHDR1633_20OCT2017_125153.EDF','S0006O01M01_pEEG_CHDR1633_27OCT2017_095158.EDF',
+#         'S0007O01M01_pEEG_CHDR1633_27OCT2017_124122.EDF','S0007O01M01_pEEG_CHDR1633_27OCT2017_131003.EDF',
+#         'S0009O01M01_pEEG_CHDR1633_03NOV2017_121917.EDF','S0008O01M01_pEEG_CHDR1633_03NOV2017_093642.EDF']
+subjects = 55
 rhos = np.array([0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6])
 inv = np.array([True,False])
 timetable = np.zeros((10,4,4,4))
 betatable = np.zeros((10,4,4,4,2))
 tau_sets = ['t_sdt','t1','t2','t3']
 #%%
-for f in range(10,len(files)):
-    peeg = pa.PEEG_Analyse2(file + files[f])
-    X = peeg.readSignals()
-    print('Subject {}'.format(f+1))
-    sobi_J = sobi.SOBI(X[0:23],[21,22],diag='Jac',taus=taus[2],eps=epses[2])
+for f in range(1,subjects):
+    print('Subject {}'.format(f))
+    X = np.concatenate((Data.X['id{}'.format(f)],Data.HEOG['id{}'.format(f)], Data.VEOG['id{}'.format(f)]))
+    
+    sobi_J = sobi.SOBI(X, 
+                     np.array([len(Data.electrodes), len(Data.electrodes)+1]),diag='Jac',taus=taus[2],eps=epses[2])
     Xc = np.zeros_like(X)
-    Xc[:21] = sobi_J.Xc[:21]
-    Xc[21:24] = X[21:24]
-    validate = val.Validate(X,Xc,[21,22],peeg=peeg)
-    bX,bXc = validate.regression()
-    beta = sum(abs(bX))
-    with open('crossval/subject_{}_beta.csv'.format(f+1), 'w', newline='') as csvfile:
-        fieldnames = ['channel','beta_V','beta_H']
+    Xc[:19] = sobi_J.Xc[:19]
+    Xc[19:21] = X[19:21]
+    validate = val.Validate(X,X,[19,20],B=Data.B['id{}'.format(f)])
+    nmse = validate.NMSE()
+    sumnmse = sum(abs(nmse))
+    with open('crossval/sim_{}_nmse.csv'.format(f), 'w', newline='') as csvfile:
+        fieldnames = ['channel','NMSE']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
-        for i in range(len(bX)):
-            writer.writerow({'channel':peeg.signalLabels[i] ,'beta_V':'{:.4f}'.format(bX[i,0]),
-                                     'beta_H':'{:.4f}'.format(bX[i,1])})
-        writer.writerow({'channel':'\t' ,'beta_V':' ',
-                                     'beta_H':' '})
-        writer.writerow({'channel':'sum abs' ,'beta_V':'{:.4f}'.format(beta[0]),
-                                     'beta_H':'{:.4f}'.format(beta[1])})
+        for i in range(len(nmse)):
+            writer.writerow({'channel':Data.electrodes[i] ,'NMSE':'{:.4f}'.format(nmse[i])})
+        writer.writerow({'channel':'\t' ,'NMSE':' '})
+        writer.writerow({'channel':'sum' ,'NMSE':'{:.4f}'.format(sumnmse)})
        
 
 #%%
@@ -168,3 +167,19 @@ for f in range(3,len(files)):
                     betatable[f,d,e,tau] = beta
                     writer.writerow({'tau':tau_sets[tau] , 'time':'{:.2f}'.format(t) ,'beta_V':'{:.4f}'.format(beta[0]),
                                      'beta_H':'{:.4f}'.format(beta[1])})
+#%%
+beta_mean = np.mean(betatable,axis = 0)
+time_mean = np.mean(timetable,axis = 0)
+
+for r in range(len(rhos)):
+    for i in range(len(inv)):
+        print('rho = {}, inv = {}'.format(rhos[r],inv[i]))
+        with open('crossval/subject_mean_rho_{}_inv_{}.csv'.format(rhos[r],inv[i]), 'w', newline='') as csvfile:
+            fieldnames = ['tau', 'time','beta_V','beta_H']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for tau in range(len(taus)):
+                t= time_mean[r,i,tau]
+                beta = beta_mean[r,i,tau] 
+                writer.writerow({'tau':tau_sets[tau] , 'time':'{:.2f}'.format(t) ,'beta_V':'{:.4f}'.format(beta[0]),
+                                 'beta_H':'{:.4f}'.format(beta[1])})

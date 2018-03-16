@@ -28,6 +28,7 @@ class Validate(object):
         self.O = X[EOG_chans]
         self.X = X[mask,:]
         self.Xc = Xc[mask,:]
+        self.B = B
 #        
 #        corrH,corrV = self.corr(X,21,22)
 #        OA = self.annotate(X,21,22)
@@ -51,6 +52,11 @@ class Validate(object):
             p,res,rnk,s = lstsq(O,Xc[:,i])
             beta_Xc[i,:] = p
         return beta_X,beta_Xc
+    
+    def NMSE(self):
+        assert not (self.B is None), 'Initialize B (ground truth) first to calculate NMSE'
+        return sum(((self.Xc-self.B)**2).T)/sum((self.B**2).T)
+    
     
     def corr(X,idx_h,idx_v):
         n_signals = len(X)
