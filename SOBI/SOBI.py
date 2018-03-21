@@ -58,10 +58,7 @@ class SOBI(object):
         #% Find components which correlate highly with EOG channels
         for i in range(0, len(self.EOG_chans)):
             for j in range(0, len(self.Sc)):
-                if(np.std(self.Sc[j,:]) == None or np.std(self.Sc[j,:]) == 0):
-                    coef = 0
-                else:
-                    coef = np.corrcoef(self.Sc[j,:], self.X[self.EOG_chans[i]])[0,1]
+                coef = np.corrcoef(self.Sc[j,:], self.X[self.EOG_chans[i]])[0,1]
                 if np.abs(coef) > self.corr_thres:
                     self.Sc[j,:] = np.zeros([1,self.Sc.shape[1]])
         #% Reconstruct
