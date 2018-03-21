@@ -1,7 +1,19 @@
 # EEG-artefact-rejection
-Machine learning techniques for EEG
+### Machine learning techniques for EEG
+
+The Second Order Blind Inference (SOBI) algorithm is a Blind Source Seperation technique that uses decorrelation across several time-lags of the signal as its main computation step (Belouchrani, 1997). This repository contains a SOBI implementation in Python 3.4, automated for the application of EOG artifact removal in EEG data as described by Joyce (2004). 
+For a tutorial on how to use the SOBI class, see `SOBI tutorial.ipynb`.
+For the literature review that lead to the choice for SOBI for this application, see `EEG_artifact_correction_report.pdf`.
+For documentation on the implementation and validation of the SOBI algorithm, see `SOBI_implementation_doc.pdf`
 
 ## Content
+
+### EEG_artifact_correction_report
+Literature study of the EOG artifact problem in EEG data, and a review of possible machine learning solutions.
+
+### SOBI_implementation_doc
+Documentation of implementation and validation of the SOBI algorithm in python 3.4. 
+
 ### EEG data (Klados datasets)
 Contains information on the simulated data, as described in 'A semi-simulated EEG/EOG dataset for the  comparison of EOG artifact rejection techniques' by Klados (2016). 
 
