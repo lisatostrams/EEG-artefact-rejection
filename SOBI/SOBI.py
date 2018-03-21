@@ -58,7 +58,10 @@ class SOBI(object):
         #% Find components which correlate highly with EOG channels
         for i in range(0, len(self.EOG_chans)):
             for j in range(0, len(self.Sc)):
-                coef = np.corrcoef(self.Sc[j,:], self.X[self.EOG_chans[i]])[0,1]
+                if(np.std(self.Sc[j,:]) == None or np.std(self.Sc[j,:]) == 0):
+                    coef = 0
+                else:
+                    coef = np.corrcoef(self.Sc[j,:], self.X[self.EOG_chans[i]])[0,1]
                 if np.abs(coef) > self.corr_thres:
                     self.Sc[j,:] = np.zeros([1,self.Sc.shape[1]])
         #% Reconstruct
@@ -150,17 +153,22 @@ class SOBI(object):
         The transpose of the joint diagonalizer is the unmixing matrix
         Computation time is a function of number of lags
         '''
-        if(diag == 'ACDC'):
-            W,_,_,_ = self.svd_whiten(ACDC(R_tau, eps=eps, sweeps=sweeps))            
-        elif(diag == 'Fro'):
-            W,_ = fast_frobenius(R_tau, eps = eps)   
-            W,_,_,_ = self.svd_whiten(W)
-        elif(diag == 'LSB'):
-           W,_,_,_ = self.svd_whiten(LSB(R_tau))
-        else:
-            W,_,_ = jacobi_angles(R_tau, eps = eps, sweeps = sweeps)
-   
-        S = np.dot(W.T,X)
+        try:
+            if(diag == 'ACDC'):
+                W,_,_,_ = self.svd_whiten(ACDC(R_tau, eps=eps, sweeps=sweeps))            
+            elif(diag == 'Fro'):
+                W,_ = fast_frobenius(R_tau, eps = eps)   
+                W,_,_,_ = self.svd_whiten(W)
+            elif(diag == 'LSB'):
+               W,_,_,_ = self.svd_whiten(LSB(R_tau))
+            else:
+                W,_,_ = jacobi_angles(R_tau, eps = eps, sweeps = sweeps)
+       
+            S = np.dot(W.T,X)
+        except np.linalg.LinAlgError as err:
+            print('Joint diagonalizer did not converge. Disregard results.')
+            return X,np.eye(len(X)) 
+            
         return S, W
         
     def find_flips(self,S,Sf):

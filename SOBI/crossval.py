@@ -48,98 +48,98 @@ epses = [0.1,0.01,0.001,0.0001]
 subjects = 55
 rhos = np.array([0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6])
 inv = np.array([True,False])
-timetable = np.zeros((10,4,4,4))
-betatable = np.zeros((10,4,4,4,2))
+timetable = np.zeros((55,4,4,4))
+nmsetable = np.zeros((55,4,4,4))
 tau_sets = ['t_sdt','t1','t2','t3']
 #%%
-for f in range(1,subjects):
-    print('Subject {}'.format(f))
-    X = np.concatenate((Data.X['id{}'.format(f)],Data.HEOG['id{}'.format(f)], Data.VEOG['id{}'.format(f)]))
-    
-    sobi_J = sobi.SOBI(X, 
-                     np.array([len(Data.electrodes), len(Data.electrodes)+1]),diag='Jac',taus=taus[2],eps=epses[2])
-    Xc = np.zeros_like(X)
-    Xc[:19] = sobi_J.Xc[:19]
-    Xc[19:21] = X[19:21]
-    validate = val.Validate(X,X,[19,20],B=Data.B['id{}'.format(f)])
-    nmse = validate.NMSE()
-    sumnmse = sum(abs(nmse))
-    with open('crossval/sim_{}_nmse.csv'.format(f), 'w', newline='') as csvfile:
-        fieldnames = ['channel','NMSE']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-        for i in range(len(nmse)):
-            writer.writerow({'channel':Data.electrodes[i] ,'NMSE':'{:.4f}'.format(nmse[i])})
-        writer.writerow({'channel':'\t' ,'NMSE':' '})
-        writer.writerow({'channel':'sum' ,'NMSE':'{:.4f}'.format(sumnmse)})
-       
+#for f in range(1,subjects):
+#    print('Subject {}'.format(f))
+#    X = np.concatenate((Data.X['id{}'.format(f)],Data.HEOG['id{}'.format(f)], Data.VEOG['id{}'.format(f)]))
+#    
+#    sobi_J = sobi.SOBI(X, 
+#                     np.array([len(Data.electrodes), len(Data.electrodes)+1]),diag='Jac',taus=taus[2],eps=epses[2])
+#    Xc = np.zeros_like(X)
+#    Xc[:19] = sobi_J.Xc[:19]
+#    Xc[19:21] = X[19:21]
+#    validate = val.Validate(X,X,[19,20],B=Data.B['id{}'.format(f)])
+#    nmse = validate.NMSE()
+#    sumnmse = sum(abs(nmse))
+#    with open('crossval/sim_{}_nmse.csv'.format(f), 'w', newline='') as csvfile:
+#        fieldnames = ['channel','NMSE']
+#        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+#        writer.writeheader()
+#        for i in range(len(nmse)):
+#            writer.writerow({'channel':Data.electrodes[i] ,'NMSE':'{:.4f}'.format(nmse[i])})
+#        writer.writerow({'channel':'\t' ,'NMSE':' '})
+#        writer.writerow({'channel':'sum' ,'NMSE':'{:.4f}'.format(sumnmse)})
+#       
 
 #%%
 
-for f in range(2,10):
-    peeg = pa.PEEG_Analyse2(file + files[f])
-    X = peeg.readSignals()
-    print('Subject {}'.format(f+1))
+for f in range(39,subjects):
+    X = np.concatenate((Data.X['id{}'.format(f)],Data.HEOG['id{}'.format(f)], Data.VEOG['id{}'.format(f)]))
+    
+    print('Subject {}'.format(f))
     for d in range(len(diag)):
         for e in range(len(epses)):
             print(diag[d] + ', eps = {}'.format(epses[e]))
-            with open('crossval/subject_{}_diag_{}_eps_0p{}1.csv'.format(f+1,diag[d],'0'*e), 'w', newline='') as csvfile:
-                fieldnames = ['tau', 'time','beta_V','beta_H']
+            with open('crossval/sim_{}_diag_{}_eps_0p{}1.csv'.format(f,diag[d],'0'*e), 'w', newline='') as csvfile:
+                fieldnames = ['electrode', 'time','NMSE']
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 writer.writeheader()
+                start_time = time.time()
+                sobi_J = sobi.SOBI(X,[19,20],diag=diag[d],taus=taus_3,eps=epses[e])
+                Xc = np.zeros_like(X)
+                Xc[:19] = sobi_J.Xc[:19]
+                Xc[19:21] = X[19:21]
 
-                for tau in range(len(taus)):
-                    start_time = time.time()
-                    sobi_J = sobi.SOBI(X[0:23],[21,22],diag=diag[d],taus=taus[tau],eps=epses[e])
-                    Xc = np.zeros_like(X)
-                    Xc[:21] = sobi_J.Xc[:21]
-                    Xc[21:24] = X[21:24]
-                    t = time.time()-start_time
-                    print("--- {:.2f} seconds total ---".format(t))
-                    timetable[f,d,e,tau] = t
-                    validate = val.Validate(X,Xc,[21,22],peeg=peeg)
-                    bX,bXc = validate.regression()
-                    beta = sum(abs(bXc))
-                    betatable[f,d,e,tau] = beta
-                    writer.writerow({'tau':tau_sets[tau] , 'time':'{:.2f}'.format(t) ,'beta_V':'{:.4f}'.format(beta[0]),
-                                     'beta_H':'{:.4f}'.format(beta[1])})
+                t = time.time()-start_time
+                print("--- {:.2f} seconds total ---".format(t))
+                timetable[f,d,e] = t
+                validate = val.Validate(X,Xc,[19,20],B=Data.B['id{}'.format(f)])
+                nmse = validate.NMSE()
+                sumnmse = sum(abs(nmse))
+                nmsetable[f,d,e] = sumnmse
+                for e in range(len(Data.electrodes)):
+                    writer.writerow({'electrode':Data.electrodes[e], 'time':'   ' ,'NMSE':'{:.4f}'.format(nmse[e])})
+                writer.writerow({'electrode':'sum', 'time':'{:.2f}'.format(t) ,'NMSE':'{:.4f}'.format(sumnmse)})
             ##bestand wegschrijven:
             #file -> taus,timetable[f,d,e],betatable[f,d,e,:,0],betatable[f,d,e,:,1]
             #filename = 'subject_{f}_diag_{diag[d]}_eps_{epses[e]}'
 
 #%%
-beta_mean = np.mean(betatable,axis = 0)
+nmse_mean = np.mean(nmsetable,axis = 0)
 time_mean = np.mean(timetable,axis = 0)
 
 for d in range(len(diag)):
     for e in range(len(epses)):
         print(diag[d] + ', eps = {}'.format(epses[e]))
-        with open('crossval/subject_mean_diag_{}_eps_0p{}1.csv'.format(diag[d],'0'*e), 'w', newline='') as csvfile:
-            fieldnames = ['tau', 'time','beta_V','beta_H']
+        with open('crossval/sim_mean_diag_{}_eps_0p{}1.csv'.format(diag[d],'0'*e), 'w', newline='') as csvfile:
+            fieldnames = ['tau', 'time','NMSE']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             for tau in range(len(taus)):
                 t= time_mean[d,e,tau]
-                beta = beta_mean[d,e,tau] 
-                writer.writerow({'tau':tau_sets[tau] , 'time':'{:.2f}'.format(t) ,'beta_V':'{:.4f}'.format(beta[0]),
-                                 'beta_H':'{:.4f}'.format(beta[1])})
+                nmse = nmse_mean[d,e,tau] 
+                writer.writerow({'tau':tau_sets[tau] , 'time':'{:.2f}'.format(t) ,'NMSE':'{:.4f}'.format(nmse)})
 #%%
-beta_mean_eps = np.mean(beta_mean,axis=1)
+nmse_mean_eps = np.mean(nmse_mean,axis=1)
 time_mean_eps = np.mean(time_mean,axis=1)
 for d in range(len(diag)):
     print(diag[d])
     with open('crossval/subject_mean_diag_{}_eps_mean.csv'.format(diag[d],'0'*e), 'w', newline='') as csvfile:
-        fieldnames = ['tau', 'time','beta_V','beta_H']
+        fieldnames = ['tau', 'time','NMSE']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for tau in range(len(taus)):
             t= time_mean_eps[d,tau]
-            beta = beta_mean_eps[d,tau] 
-            writer.writerow({'tau':tau_sets[tau] , 'time':'{:.2f}'.format(t) ,'beta_V':'{:.4f}'.format(beta[0]),
-                             'beta_H':'{:.4f}'.format(beta[1])})
+            nmse = nmse_mean_eps[d,tau] 
+            writer.writerow({'tau':tau_sets[tau] , 'time':'{:.2f}'.format(t) ,'NMSE':'{:.4f}'.format(sumnmse)})
 
 #%% Diag = Jac, epses= 0.0001, tau = ??
-            
+    print(bla)
+timetable = np.zeros((10,11,2,4))
+betatable = np.zeros((10,11,2,4,2))     
 for f in range(3,len(files)):
     peeg = pa.PEEG_Analyse2(file + files[f])
     X = peeg.readSignals()
