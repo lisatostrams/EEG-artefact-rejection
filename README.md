@@ -6,27 +6,30 @@ For a tutorial on how to use the SOBI class, see `SOBI tutorial.ipynb`.
 For the literature review that lead to the choice for SOBI for this application, see `EEG_artifact_correction_report.pdf`.
 For documentation on the implementation and validation of the SOBI algorithm, see `SOBI_implementation_doc.pdf`
 
-## Content
+# Content
 
-### EEG_artifact_correction_report
+## Files
+> EEG_artifact_correction_report
 Literature study of the EOG artifact problem in EEG data, and a review of possible machine learning solutions.
 
-### SOBI_implementation_doc
+> SOBI_implementation_doc
 Documentation of implementation and validation of the SOBI algorithm in python 3.4. 
 
-### EEG data (Klados datasets)
+> EEG data (Klados datasets)
 Contains information on the simulated data, as described in 'A semi-simulated EEG/EOG dataset for the  comparison of EOG artifact rejection techniques' by Klados (2016). 
 
-### Literature 
+## Folders
+
+#### Literature 
 Contains all articles cited in 'EEG artifact correction report' and 'SOBI implementation doc'.
 
-### Meta docs
+#### Meta docs
 Contains all meta information about the planning of this project. 
 
-### plot scripts
+#### plot scripts
 Contains all scripts used for creating plots in presentations, report, and implementation documentation.
 
-### SOBI
+#### SOBI
 Contains the following files written in Python 3.4:
 * SOBI.py: The class containing the Second Order Blind Inference algorithm.
 * joint_diagonalizer.py: Script containing 4 algorithms that can be used for joint diagonalization.
