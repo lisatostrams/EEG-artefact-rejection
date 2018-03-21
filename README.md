@@ -9,16 +9,15 @@ For documentation on the implementation and validation of the SOBI algorithm, se
 # Content
 
 ## Files
-> EEG_artifact_correction_report
-Literature study of the EOG artifact problem in EEG data, and a review of possible machine learning solutions.
+* `EEG_artifact_correction_report`:
+  Literature study of the EOG artifact problem in EEG data, and a review of possible machine learning solutions.
 
-> SOBI_implementation_doc
+* `SOBI_implementation_doc`:
 Documentation of implementation and validation of the SOBI algorithm in python 3.4. 
 
-> EEG data (Klados datasets)
-Contains information on the simulated data, as described in 'A semi-simulated EEG/EOG dataset for the  comparison of EOG artifact rejection techniques' by Klados (2016). 
-
 ## Folders
+#### EEG data (Klados datasets)
+Contains information on the simulated data, as described in 'A semi-simulated EEG/EOG dataset for the  comparison of EOG artifact rejection techniques' by Klados (2016). 
 
 #### Literature 
 Contains all articles cited in 'EEG artifact correction report' and 'SOBI implementation doc'.
@@ -31,10 +30,10 @@ Contains all scripts used for creating plots in presentations, report, and imple
 
 #### SOBI
 Contains the following files written in Python 3.4:
-* SOBI.py: The class containing the Second Order Blind Inference algorithm.
-* joint_diagonalizer.py: Script containing 4 algorithms that can be used for joint diagonalization.
-* sim_data.py: Script that reads the simulated data from the Data folder and returns it as an array object.
-* Validate.py: The class object used to validate the correction applied by the SOBI algorithm for either simulated data or acquired data. 
+* `SOBI.py`: The class containing the Second Order Blind Inference algorithm.
+* `joint_diagonalizer.py`: Script containing 4 algorithms that can be used for joint diagonalization.
+* `sim_data.py`: Script that reads the simulated data from the Data folder and returns it as an array object.
+* `Validate.py`: The class object used to validate the correction applied by the SOBI algorithm for either simulated data or acquired data. 
 
 Contains the following subfolders:
 * acdc: Matlab files of ACDC algorithm implementation by 
